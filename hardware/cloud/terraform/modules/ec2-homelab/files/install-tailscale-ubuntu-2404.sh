@@ -1,0 +1,1 @@
+../../../../../../tools/scripts/install-tailscale-ubuntu-2404.sh

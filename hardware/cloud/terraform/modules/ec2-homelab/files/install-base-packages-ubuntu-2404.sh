@@ -1,0 +1,1 @@
+../../../../../../tools/scripts/install-base-packages-ubuntu-2404.sh

@@ -1,0 +1,44 @@
+#!/bin/bash
+echo "Starting custom launch script"
+
+set -e
+
+# Set the hostname
+hostname ${instance_name}
+
+# Install Amazon SSM Agent
+# Do this first so we can still debug if later steps fail.
+snap install amazon-ssm-agent --classic
+systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+
+cat > /usr/local/bin/install-base-packages-ubuntu-2404.sh << 'EOF'
+${install_base_packages_ubuntu_2404_script}
+EOF
+chmod u+x /usr/local/bin/install-base-packages-ubuntu-2404.sh
+
+cat > /usr/local/bin/install-tailscale-ubuntu-2404.sh << 'EOF'
+${install_tailscale_ubuntu_2404_script}
+EOF
+chmod u+x /usr/local/bin/install-tailscale-ubuntu-2404.sh
+
+cat > /usr/local/bin/launch-tailscale.sh << 'EOF'
+${launch_tailscale_script}
+EOF
+chmod u+x /usr/local/bin/launch-tailscale.sh
+
+cat > /usr/local/bin/create-user-linux.sh << 'EOF'
+${create_user_linux_script}
+EOF
+chmod u+x /usr/local/bin/create-user-linux.sh
+
+/usr/local/bin/install-base-packages-ubuntu-2404.sh
+/usr/local/bin/install-tailscale-ubuntu-2404.sh
+
+# Launch tailscale as early as possible to enable tailscale connection even if
+# later failure.
+ts_auth_key="$(aws secretsmanager get-secret-value --region us-east-1 --secret-id ${ts_auth_key_name} --query SecretString --output text | jq -r .ts_auth_key)"
+/usr/local/bin/launch-tailscale.sh "$ts_auth_key" "${instance_name}"
+/usr/local/bin/create-user-linux.sh ${username}
+
+echo "Custom launch script completed"
