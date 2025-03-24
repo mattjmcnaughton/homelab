@@ -1,0 +1,12 @@
+---
+- import_playbook: packages.yml
+- import_playbook: ebpf.yml
+- import_playbook: docker.yml
+- import_playbook: users.yml
+- import_playbook: btrfs.yml
+# NOTE: We assume tailscale has already been configured and installed.
+# The playbook just checks the service is enabled.
+- import_playbook: tailscale.yml
+- import_playbook: updates.yml
+- import_playbook: nvidia-gpu.yml
+#- import_playbook: docker-compose-tailscale-service.yml

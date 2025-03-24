@@ -1,0 +1,16 @@
+---
+- name: Ensure Unattended Upgrades is Running
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure unattended-upgrades service is enabled and started
+      systemd:
+        name: unattended-upgrades
+        state: started
+        enabled: yes
+      register: upgrades_status
+
+    - name: Unattended-upgrades service status
+      debug:
+        msg:
+          - "Unattended-upgrades service status: {{ upgrades_status.changed | ternary('Started', 'Already running') }}"

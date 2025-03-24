@@ -25,6 +25,9 @@ override.tf.json
 # Secrets and keys
 .env.tailscale
 
+# Python
+.venv
+
 # Common text editors
 # VSCode
 .vscode/*
@@ -33,7 +36,6 @@ override.tf.json
 !.vscode/launch.json
 !.vscode/extensions.json
 *.code-workspace
-
 
 # Vim
 [._]*.s[a-v][a-z]

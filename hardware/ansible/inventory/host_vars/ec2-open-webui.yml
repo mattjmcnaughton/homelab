@@ -1,0 +1,21 @@
+---
+hostname: ec2-open-webui
+
+users:
+  - username: mattjmcnaughton
+    is_sudo: true
+    groups:
+      - docker
+
+btrfs:
+  root_volume:
+    - device_name: /dev/nvme1n1
+      fs_label: btrfs-encrypted-fs
+      mount_path: /encrypted_fs
+  subvolumes:
+    - root_volume_fs_label: btrfs-encrypted-fs
+      subvolume_name: "@home"
+      mount_path: /home
+    - root_volume_fs_label: btrfs-encrypted-fs
+      subvolume_name: "@docker"
+      mount_path: /var/lib/docker

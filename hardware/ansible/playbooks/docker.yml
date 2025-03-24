@@ -1,0 +1,78 @@
+---
+- name: Install Docker
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Check last apt update time
+      stat:
+        path: /var/lib/apt/periodic/update-success-stamp
+      register: apt_update_stamp
+
+    - name: Create Docker keyring directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+      register: gpg_key_download
+
+    - name: Get system architecture
+      command: dpkg --print-architecture
+      register: system_architecture
+      changed_when: false
+
+    - name: Get Ubuntu release codename
+      command: bash -c '. /etc/os-release && echo "$UBUNTU_CODENAME"'
+      register: ubuntu_codename
+      changed_when: false
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch={{ system_architecture.stdout }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ubuntu_codename.stdout }} stable"
+        filename: docker
+        state: present
+      register: repo_added
+
+    - name: Update apt cache if repository was added or GPG key changed
+      apt:
+        update_cache: yes
+      when: repo_added.changed or gpg_key_download.changed
+
+    - name: Run apt update if last update was more than 1 hour ago
+      apt:
+        update_cache: yes
+      when: (apt_update_stamp.stat.exists == false or
+            ansible_date_time.epoch|int - apt_update_stamp.stat.mtime|int > 3600) and
+            not (repo_added.changed or gpg_key_download.changed)
+
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+      register: docker_install_result
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      register: docker_service_result
+
+    - name: Summary of Docker installation
+      debug:
+        msg:
+          - "Docker GPG key downloaded: {{ gpg_key_download.changed | ternary('Yes', 'Already exists') }}"
+          - "Docker repository added: {{ repo_added.changed | ternary('Yes', 'Already exists') }}"
+          - "Docker packages installed: {{ docker_install_result.changed | ternary('Yes', 'Already up-to-date') }}"
+          - "Docker service enabled and started: {{ docker_service_result.changed | ternary('Yes', 'Already running') }}"

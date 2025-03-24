@@ -1,0 +1,6 @@
+---
+service_name: "open-webui"
+container_port: "8080"
+
+aws_secrets_manager_secret_names:
+  - "homelab/api/tailscale-scope-auth-key"

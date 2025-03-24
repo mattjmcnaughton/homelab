@@ -1,0 +1,46 @@
+---
+# packages.yml
+- name: Install base packages for homelab
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Check last apt update time
+      stat:
+        path: /var/lib/apt/periodic/update-success-stamp
+      register: apt_update_stamp
+
+    - name: Run apt update if last update was more than 1 hour ago
+      apt:
+        update_cache: yes
+      when: apt_update_stamp.stat.exists == false or
+            ansible_date_time.epoch|int - apt_update_stamp.stat.mtime|int > 3600
+
+    - name: Install required apt packages
+      apt:
+        name:
+          - curl
+          - gnupg
+          - jq
+          - neovim
+          - git
+          - htop
+          - tmux
+          - wget
+          - ripgrep
+          - rsync
+        state: present
+      register: apt_install_result
+
+    - name: Install aws-cli as classic snap
+      snap:
+        name: aws-cli
+        classic: yes
+        state: present
+      register: snap_install_result
+
+    - name: Summary of installed packages
+      debug:
+        msg:
+          - "APT packages installed or verified: {{ apt_install_result.changed | ternary('Yes', 'Already up-to-date') }}"
+          - "AWS CLI snap installed or verified: {{ snap_install_result.changed | ternary('Yes', 'Already up-to-date') }}"

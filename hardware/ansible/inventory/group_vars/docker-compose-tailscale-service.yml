@@ -1,0 +1,3 @@
+---
+host_service_username: "mattjmcnaughton"
+tailscale_advertise_tags_arg: "tag:homelab-auto-provision"

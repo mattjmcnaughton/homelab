@@ -1,0 +1,99 @@
+---
+- name: Install NVIDIA Drivers and Container Toolkit
+  hosts: nvidia-gpu
+  become: true
+  vars:
+    nvidia_driver_version: "535"
+
+  tasks:
+    - name: Check last apt update time
+      stat:
+        path: /var/lib/apt/periodic/update-success-stamp
+      register: apt_update_stamp
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: apt_update_stamp.stat.exists == false or
+            ansible_date_time.epoch|int - apt_update_stamp.stat.mtime|int > 3600
+
+    - name: Install NVIDIA drivers and utilities
+      apt:
+        name:
+          - "nvidia-driver-{{ nvidia_driver_version }}"
+          - "nvidia-utils-{{ nvidia_driver_version }}"
+          - nvidia-cuda-toolkit
+          - nvtop
+        state: present
+      register: nvidia_drivers_install
+
+    # NVIDIA Container Toolkit installation
+    - name: Create keyring directory
+      file:
+        path: /usr/share/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download NVIDIA Container Toolkit GPG key
+      get_url:
+        url: https://nvidia.github.io/libnvidia-container/gpgkey
+        dest: /tmp/nvidia-gpgkey
+        mode: '0644'
+      register: nvidia_gpg_download
+
+    - name: Dearmor GPG key
+      shell: cat /tmp/nvidia-gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+      args:
+        creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+      when: nvidia_gpg_download.changed
+
+    - name: Add NVIDIA Container Toolkit repository
+      get_url:
+        url: https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
+        dest: /tmp/nvidia-container-toolkit.list
+        mode: '0644'
+      register: nvidia_repo_download
+
+    - name: Configure repository with signing key
+      shell: cat /tmp/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' > /etc/apt/sources.list.d/nvidia-container-toolkit.list
+      args:
+        creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+      when: nvidia_repo_download.changed
+      register: repo_configured
+
+    - name: Update apt cache after adding repository
+      apt:
+        update_cache: yes
+      when: repo_configured.changed
+
+    - name: Install NVIDIA Container Toolkit
+      apt:
+        name: nvidia-container-toolkit
+        state: present
+      register: container_toolkit_install
+
+    # Docker configuration for NVIDIA
+    - name: Check if Docker is installed
+      command: which docker
+      register: docker_check
+      changed_when: false
+      failed_when: false
+
+    - name: Configure Docker to use NVIDIA runtime
+      command: nvidia-ctk runtime configure --runtime=docker
+      when: docker_check.rc == 0 and container_toolkit_install.changed
+      register: docker_nvidia_config
+
+    - name: Restart Docker service
+      systemd:
+        name: docker
+        state: restarted
+      when: docker_check.rc == 0 and docker_nvidia_config.changed
+
+    - name: Summary of NVIDIA installation
+      debug:
+        msg:
+          - "NVIDIA drivers installed: {{ nvidia_drivers_install.changed | ternary('Yes', 'Already installed') }}"
+          - "NVIDIA Container Toolkit installed: {{ container_toolkit_install.changed | ternary('Yes', 'Already installed') }}"
+          - "Docker configured for NVIDIA: {{ docker_nvidia_config.changed | default(false) | ternary('Yes', 'No changes needed') }}"
+          - "Note: A system reboot may be required for the NVIDIA drivers to take effect."

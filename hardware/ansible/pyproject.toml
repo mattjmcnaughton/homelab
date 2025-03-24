@@ -1,0 +1,16 @@
+[project]
+name = "ansible"
+version = "0.1.0"
+description = "Ansible project with uv and Nix"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ansible>=8.0.0",
+    "ansible-core>=2.15.0",
+    "boto3>=1.37",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ansible-lint>=6.0.0",
+]

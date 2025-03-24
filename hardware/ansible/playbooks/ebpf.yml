@@ -1,0 +1,45 @@
+---
+# ebpf_tools.yml
+- name: Install eBPF tools
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Check last apt update time
+      stat:
+        path: /var/lib/apt/periodic/update-success-stamp
+      register: apt_update_stamp
+
+    - name: Run apt update if last update was more than 1 hour ago
+      apt:
+        update_cache: yes
+      when: apt_update_stamp.stat.exists == false or
+            ansible_date_time.epoch|int - apt_update_stamp.stat.mtime|int > 3600
+
+    - name: Check if bpftool is already installed
+      command: which bpftool
+      register: bpftool_check
+      changed_when: false
+
+    - name: Get kernel version from target
+      command: uname -r
+      register: kernel_version
+      changed_when: false
+
+    - name: Install linux headers for current kernel
+      apt:
+        name: "linux-headers-{{ kernel_version.stdout }}"
+        state: present
+      register: headers_install_result
+
+    - name: Install bpfcc-tools
+      apt:
+        name: bpfcc-tools
+        state: present
+      register: bpfcc_install_result
+
+    - name: Summary of eBPF tools installation
+      debug:
+        msg:
+          - "Linux headers ({{ kernel_version.stdout }}) installed: {{ headers_install_result.changed | ternary('Yes', 'Already up-to-date') }}"
+          - "bpfcc-tools installed: {{ bpfcc_install_result.changed | ternary('Yes', 'Already up-to-date') }}"

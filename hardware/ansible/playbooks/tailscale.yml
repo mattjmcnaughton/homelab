@@ -1,0 +1,16 @@
+---
+- name: Ensure tailscaled Service is Running
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure tailscaled service is enabled and started
+      systemd:
+        name: tailscaled
+        state: started
+        enabled: yes
+      register: tailscaled_status
+
+    - name: Tailscaled service status
+      debug:
+        msg:
+          - "Tailscaled service status: {{ tailscaled_status.changed | ternary('Started', 'Already running') }}"
