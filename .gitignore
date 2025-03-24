@@ -23,7 +23,7 @@ override.tf.json
 *.vault
 
 # Secrets and keys
-secrets/
+.env.tailscale
 
 # Common text editors
 # VSCode
