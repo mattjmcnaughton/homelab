@@ -9,4 +9,4 @@
 - import_playbook: tailscale.yml
 - import_playbook: updates.yml
 - import_playbook: nvidia-gpu.yml
-#- import_playbook: docker-compose-tailscale-service.yml
+- import_playbook: docker-compose-tailscale-service.yml

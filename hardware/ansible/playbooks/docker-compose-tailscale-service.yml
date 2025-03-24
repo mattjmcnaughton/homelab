@@ -1,0 +1,57 @@
+---
+- name: Setup and configure Docker Compose service with AWS secrets and Tailscale
+  hosts: docker-compose-tailscale-service
+  vars:
+    docker_compose_dir: "/home/{{ host_service_username }}/{{ service_name }}-compose"
+    aws_secrets: {}   # This will hold our secrets
+
+  tasks:
+    - name: Fetch multiple secrets in a loop
+      set_fact:
+        aws_secrets: "{{ aws_secrets | combine({item: lookup('amazon.aws.secretsmanager_secret', item, region='us-east-1') | from_json}) }}"
+      loop: "{{ aws_secrets_manager_secret_names }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: Create Docker Compose directory
+      file:
+        path: "{{ docker_compose_dir }}"
+        state: directory
+        mode: '0755'
+      register: compose_dir_created
+
+    - name: Check if files directory exists for service
+      stat:
+        path: "files/{{ service_name }}"
+      register: service_files_dir
+      delegate_to: localhost
+
+    - name: Copy files for service if they exist
+      copy:
+        src: "files/{{ service_name }}/"
+        dest: "{{ docker_compose_dir }}/"
+        mode: preserve
+      when: service_files_dir.stat.exists and service_files_dir.stat.isdir
+      register: files_copied
+
+    - name: Find all J2 templates
+      find:
+        paths: "templates/{{ service_name }}"
+        patterns: "*.j2"
+        hidden: true
+        recurse: yes
+      delegate_to: localhost
+      register: template_files
+
+    - name: Process all templates
+      template:
+        src: "{{ item.path }}"
+        dest: "{{ docker_compose_dir }}/{{ item.path | basename | regex_replace('\\.j2$', '') }}"
+        mode: preserve
+      loop: "{{ template_files.files }}"
+      register: templates_copied
+
+    - name: Restart Docker Compose if any files changed
+      shell: |
+        cd {{ docker_compose_dir }} && docker compose down && docker compose up -d
+      when: files_copied.changed or templates_copied.changed
