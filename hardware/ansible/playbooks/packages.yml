@@ -37,10 +37,17 @@
         name: aws-cli
         classic: yes
         state: present
+      register: snap_classic_install_result
+
+    - name: Install bw (bitwarden) as snap
+      snap:
+        name: bw
+        state: present
       register: snap_install_result
 
     - name: Summary of installed packages
       debug:
         msg:
           - "APT packages installed or verified: {{ apt_install_result.changed | ternary('Yes', 'Already up-to-date') }}"
-          - "AWS CLI snap installed or verified: {{ snap_install_result.changed | ternary('Yes', 'Already up-to-date') }}"
+          - "Classic snaps installed or verified: {{ snap_classic_install_result.changed | ternary('Yes', 'Already up-to-date') }}"
+          - "Snaps installed or verified: {{ snap_install_result.changed | ternary('Yes', 'Already up-to-date') }}"

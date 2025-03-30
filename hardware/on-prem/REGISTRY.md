@@ -12,6 +12,12 @@ Tracking what I've got and what it's being used for.
     - specs: 4 CPUs (Intel I5 @ 3.5GHz) w/ Intel QuickSync, 16GB Ram, 256GB Samsung SSD Harddrive
     - name: op-ampere
     - current-usage: Server for running VMs (LXD) / multi-node k3s (within VMs) for homelab applications.
+- id_: 512gb-western-digital-blue-hd
+    - type: storage
+    - attached_to: op-ampere
+    - specs: 512 GB SSD
+    - previous-usage: NixOS (cow) install. Verified not singular data store.
+    - current-usage: Attached as btrfs storage to `op-ampere`.
 
 ### Not-used
 
@@ -31,12 +37,6 @@ Tracking what I've got and what it's being used for.
 
 #### Storage
 
-- id_: 512gb-western-digital-blue-hd
-    - type: storage
-    - specs: 512 GB SSD
-    - current-usage: NixOS install, which I've _not_ verified is ready for
-      deletion.
-    - planned-usage: TBD
 - id_: $TBD - m2 SSD
 
 ## Notes

@@ -1,0 +1,12 @@
+---
+hostname: op-ampere
+
+users:
+  - username: mattjmcnaughton
+    is_sudo: true
+    groups:
+      - docker
+
+btrfs:
+  root_volume: []
+  subvolumes: []

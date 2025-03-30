@@ -1,13 +1,20 @@
 # op-ampere
 
-## Post-install log
+## Game plan
 
-- We may want to reinstall this machine using some of the new things that we've
-  learned (i.e. Ansible playbooks, etc).
-- We can consider using bitwarden-cli for the initial copying of the ts auth key.
-- We still need to get lxd, k3s, etc... configured.
+- We want to install Ubuntu 24.04 server.
+- For storage:
+    - Our 256GB Samsung disk will be an encrypted LVM ext4 system with the main
+      install.
+      - The Ubuntu installer can manage this entirely.
+        - This is for the base OS and VM images.
+    - We will also provision/mount a 500GB Western Digital SSD as an encrypted
+      btrfs filesystem.
+        - This is for data storage (both on host and for mounting into the VMs).
+- We do a "bare essentials" install manually (relying on our existing scripts
+  which we can download from GitHub). Then, we can use Ansible for the rest.
 
-## Install log (2025-03)
+## Install log
 
 ### Install Ubuntu 24.04
 
@@ -19,116 +26,104 @@
 - Steps:
     - Insert USB and select "Try/install Ubuntu Server"
     - Non-default updates/notes:
-        - Ensure selecting ethernet.
-        - Select "Custom storage configuration".
-            - Select the disk and say "Use as Boot Device"
-            - Add a GPT partition for boot.
-                - 4GB, EXT4, /boot
-            - Add an unencrypted btrfs partition for `/`.
-                - 100GB; btrfs, /.
-                    - 100GB is the amount recommended by Claude. We can
-                      grow/shrink if necessary.
-            - Later on we will add an encrypted `/fs`.
+        - For "Guided storage configuration"
+            - Select "Use an entire disk" > "Set up this disk as an LVM group" >
+              "Encrypt the LVM group w/ LUKS"
+                - Do NOT create a recovery key.
+            - We will create the encrypted btrfs volume after.
         - Set username/password.
         - For now, don't install OpenSSH. I can always access locally via the
           console.
+        - We do not want to preinstall any snaps.
         - Reboot (removing the USB).
 
-## Basic software provisioning
-
-POST-INSTALL-NOTE: We should revisit how we do this next time. Likely much of it
-could, and should, be simplified with some of the scripts in `tools/scripts`
-and/or done via Ansible (or another similar tool) once tailscale is configured.
-In particular, we want to avoid the need to set up an openssh-server on the
-newly provisioned target host. That said, provisioning the encrypted disk will
-likely be manual.
+## Generic host provisioning
 
 ```
-# Enable passwordless sudo
-echo "mattjmcnaughton ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/mattjmcnaughton)
+echo "mattjmcnaughton ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/mattjmcnaughton
 sudo chmod 440 /etc/sudoers.d/mattjmcnaughton
 
-# Update packages
-sudo apt update && sudo apt upgrade
+sudo apt update && apt upgrade
 
-# Setup the encrypted disk
-sudo apt update && sudo apt install -y btrfs-progs cryptsetup
-lsblk  # Identify the disk with the available space.
-sudo parted /dev/sda print  # Check for the partitions. We may need to create one.
+mkdir /tmp/bootstrap-scripts && cd /tmp/bootstrap-scripts
 
-# If we need to create the blank partition...
-sudo parted /dev/sda
-mkpart mkpart encrypted-btrfs $END-OF-LAST-PART 100%
-print
-quit
+wget https://raw.githubusercontent.com/mattjmcnaughton/homelab/refs/heads/main/tools/scripts/install-base-packages-ubuntu-2404.sh
+chmod u+x install-base-packages-ubuntu-2404.sh
+sudo ./install-base-packages-ubuntu-2404.sh
 
-sudo cryptsetup luksFormat /dev/sda4  # Enter a password (same as OS... may
-revisit later).
-sudo cryptsetup open /dev/sda4 encrypted_data
-sudo mkfs.btrfs -L op-ampere-encrypted-btrfs /dev/mapper/encrypted_data
-sudo mkdir -p /encrypted_fs
-sudo mount -o compress=zstd,noatime,space_cache=v2 /dev/mapper/encrypted_data
-/encrypted_fs
-# Will prompt for decryption password at boot.
-sudo bash -c 'echo "encrypted_data UUID=$(sudo blkid -s UUID -o value /dev/sda4) none luks" >> /etc/crypttab')
-sudo bash -c 'echo "/dev/mapper/encrypted_data /encrypted_fs btrfs defaults,compress=zstd,noatime,space_cache=v2 0 0" >> /etc/fstab'
+wget https://raw.githubusercontent.com/mattjmcnaughton/homelab/refs/heads/main/tools/scripts/install-tailscale-ubuntu-2404.sh
+chmod u+x install-tailscale-ubuntu-2404.sh
+sudo ./install-tailscale-ubuntu-2404.sh
 
-# Reboot
-sudo reboot
+# The `mattjmcnaughton` user already exists, so unlike EC2, we don't need to run
+# the `create-user-linux.sh` script.
 
-# Move `/home` directory to an encrypted subvolume.
-sudo btrfs subvolume create /encrypted_fs/@home
-sudo rsync -avPHSX /home/ /encrypted_fs/@home/
-sudo mv /home /home.old
-sudo mkdir /home
-sudo bash -c 'echo "/dev/mapper/encrypted_data /home btrfs defaults,subvol=@home,compress=zstd,noatime,space_cache=v2 0 0" >> /etc/fstab'
-sudo systemctl daemon-reload
-sudo mount /home
-sudo btrfs subvolume show /home
-rm -rf /home.old
+# Auth to bitwarden
+export BW_SESSION=$(bw login --raw)
 
-# Create `/encrypted_fs/data` as an encrypted subvolume.
-sudo btrfs subvolume create /encrypted_fs/@data
-sudo mkdir /encrypted_fs/data
-sudo bash -c 'echo "/dev/mapper/encrypted_data /encrypted_fs/data btrfs defaults,subvol=@data,compress=zstd,noatime,space_cache=v2 0 0" >> /etc/fstab'
-sudo systemctl daemon-reload
-sudo mount /encrypted_fs/data
-sudo btrfs subvolume show /encrypted_fs/data
-sudo chown -R mattjmcnaughton:mattjmcnaughton /encrypted_fs/data
+# This assumes that we've already uploaded a tailscale auth key to our homelab bitwarden.
+# Do NOT attach tags to the key or else SSH won't work. Not sure why, but can
+# investigate later.
+wget https://raw.githubusercontent.com/mattjmcnaughton/homelab/refs/heads/main/tools/scripts/launch-tailscale.sh
+chmod u+x launch-tailscale.sh
+sudo ./launch-tailscale.sh $(bw get password $hostname) $HOSTNAME
 
-reboot
-
-# Install tailscale
-
-## Temporarily install openssh with password-less authentication...
-
-sudo su
-curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.gpg | apt-key add -
-curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.list | tee /etc/apt/sources.list.d/tailscale.list
-apt update -y
-apt install -y tailscale
-systemctl enable --now tailscaled
-export AUTH_KEY="..."  # copy from Tailscale UI
-tailscale up --ssh --auth-key="$AUTH_KEY" --hostname=$(hostname)
-vim /root/.bash_history  # Delete the export key line
-su mattjmcnaughton
-
-sudo apt uninstall --purge openssh-server
-sudo apt autoremove
-# TBD if necessary, but perhaps may help with host key validation errors.
-sudo tailscale down && sudo tailscale start --ssh --hostname=$(hostname)
-# Enter "Disable Key expiry" for this node so that it never needs to re-auth.
-
-## Exit the openssh session...
-
-## Enter a `tailscale ssh` session (or the physical host)
-sudo systemctl stop ssh
-
-## tailscaled ensures that even after reboot, the machine is still on the
-tailnet. We don't need to set-up a systemd service, etc.
-
-# (Optional) btrfs subvolumes on non-encrypted portions...
+# Ensure that we disable node expiry from the tailscale console. Also, verify
+# that ssh via tailscale works.
 ```
+
+## Machine-specific (i.e. provisioning data disk)
+
+```
+# In this case, we want to wipe /dev/sdb (which was already encrypted) and use
+# it as a btrfs encrypted data dir.
+
+sudo umount /dev/sdb
+
+# Overwrite early bytes w/ random to destroy existing filesystem.
+sudo dd if=/dev/urandom of=/dev/sdb bs=4M count=10 status=progress
+
+# Enter password when prompted...
+sudo cryptsetup luksFormat --type luks2 /dev/sdb
+
+# Verify encryption worked successfully
+sudo cryptsetup open /dev/sdb encrypted_disk
+
+# Set-up btrfs
+sudo mkfs.btrfs -L encrypted_btrfs /dev/mapper/encrypted_disk
+
+# Get the UUID
+sudo cryptsetup luksUUID /dev/sdb
+
+# Append the following line to `/etc/crypttab` (using Vim)
+# You should already see one for the base OS install disk.
+# Note, you will need to enter two passwords to unlock the disks when rebooting
+# the system.
+# "encrypted_disk UUID=your-uuid-here none luks,discard"
+
+# Append the following line to `/etc/fstab` (using Vim)
+# "/dev/mapper/encrypted_disk /mnt/encrypted_btrfs btrfs defaults 0 0"
+
+# Create the mount directory
+sudo mkdir -p /mnt/encrypted_btrfs
+
+# Test the mount setup
+sudo systemctl daemon-reload
+sudo mount -a
+
+# Ensure LUKS modules installed in initramfs
+sudo update-initramfs -u
+
+# Can manage the rest of the subvolumes via ansible.
+```
+
+## Ansible set-up
+
+We can now run ansible targeted at `op-ampere`.
+
+- Update `inventory/hosts.yml` and create an
+  `inventory/host_vars/$TARGET_HOSTNAME.yml`.
+- `uv run ansible-playbook playbooks/site.yml -l $TARGET_HOSTNAME`
 
 ## Install LXC/LXD
 

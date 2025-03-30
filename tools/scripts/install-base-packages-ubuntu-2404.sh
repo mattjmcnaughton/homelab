@@ -29,10 +29,12 @@ check_root() {
 }
 
 install_snaps() {
-    log_info "Installing aws-cli as snap"
-    snap install aws-cli --classic
+    log_info "Installing snaps"
 
-    log_info "Installed aws-cli as snap"
+    snap install aws-cli --classic
+    snap install bw
+
+    log_info "Installed snaps"
 }
 
 install_core_tools() {
