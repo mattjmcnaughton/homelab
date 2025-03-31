@@ -16,6 +16,6 @@ btrfs:
     - root_volume_fs_label: btrfs-encrypted-fs
       subvolume_name: "@home"
       mount_path: /home
-    - root_volume_fs_label: btrfs-encrypted-fs
-      subvolume_name: "@docker"
-      mount_path: /var/lib/docker
+    - root_volume_fs_label: encrypted_btrfs
+      subvolume_name: "@data"
+      mount_path: /mnt/data

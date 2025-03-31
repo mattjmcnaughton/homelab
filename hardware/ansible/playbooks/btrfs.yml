@@ -4,170 +4,184 @@
   become: true
 
   tasks:
-    # Install required packages
-    - name: Check last apt update time
-      stat:
-        path: /var/lib/apt/periodic/update-success-stamp
-      register: apt_update_stamp
+    - name: Install required packages
+      block:
+        - name: Check last apt update time
+          stat:
+            path: /var/lib/apt/periodic/update-success-stamp
+          register: apt_update_stamp
 
-    - name: Run apt update if last update was more than 1 hour ago
-      apt:
-        update_cache: yes
-      when: apt_update_stamp.stat.exists == false or
-            ansible_date_time.epoch|int - apt_update_stamp.stat.mtime|int > 3600
+        - name: Run apt update if last update was more than 1 hour ago
+          apt:
+            update_cache: yes
+          when: apt_update_stamp.stat.exists == false or
+                ansible_date_time.epoch|int - apt_update_stamp.stat.mtime|int > 3600
 
-    - name: Install required packages (btrfs-progs and rsync)
-      apt:
-        name:
-          - btrfs-progs
-          - rsync
-        state: present
-      register: package_install_result
+        - name: Install btrfs-progs and rsync
+          apt:
+            name:
+              - btrfs-progs
+              - rsync
+            state: present
+          register: package_install_result
+      tags:
+        - packages
 
-    # Root volume management
-    - name: Check if device exists
-      stat:
-        path: "{{ item.device_name }}"
-      register: device_check
-      loop: "{{ btrfs.root_volume }}"
-      loop_control:
-        label: "{{ item.device_name }}"
-      failed_when: not device_check.stat.exists
+    - name: Manage root volumes
+      block:
+        - name: Verify root devices exist
+          stat:
+            path: "{{ item.device_name }}"
+          register: device_check
+          loop: "{{ btrfs.root_volume }}"
+          loop_control:
+            label: "{{ item.device_name }}"
+          failed_when: not device_check.stat.exists
 
-    - name: Check if device is already formatted
-      command: blkid -s TYPE -o value {{ item.device_name }}
-      register: blkid_check
-      changed_when: false
-      failed_when: false
-      loop: "{{ btrfs.root_volume }}"
-      loop_control:
-        label: "{{ item.device_name }}"
+        - name: Check if devices are already formatted
+          command: blkid -s TYPE -o value {{ item.device_name }}
+          register: blkid_check
+          changed_when: false
+          failed_when: false
+          loop: "{{ btrfs.root_volume }}"
+          loop_control:
+            label: "{{ item.device_name }}"
 
-    - name: Format device with BTRFS
-      command: mkfs.btrfs -L {{ item.item.fs_label }} {{ item.item.device_name }}
-      when: item.rc != 0 or item.stdout != 'btrfs'
-      loop: "{{ blkid_check.results }}"
-      loop_control:
-        label: "{{ item.item.device_name }}"
-      register: format_results
+        - name: Format devices with BTRFS if needed
+          command: mkfs.btrfs -L {{ item.item.fs_label }} {{ item.item.device_name }}
+          when: item.rc != 0 or item.stdout != 'btrfs'
+          loop: "{{ blkid_check.results }}"
+          loop_control:
+            label: "{{ item.item.device_name }}"
+          register: format_results
 
-    - name: Ensure mount paths exist for root volumes
-      file:
-        path: "{{ item.mount_path }}"
-        state: directory
-        mode: '0755'
-        owner: root
-        group: root
-      loop: "{{ btrfs.root_volume }}"
-      loop_control:
-        label: "{{ item.mount_path }}"
+        - name: Create mount directories for root volumes
+          file:
+            path: "{{ item.mount_path }}"
+            state: directory
+            mode: '0755'
+            owner: root
+            group: root
+          loop: "{{ btrfs.root_volume }}"
+          loop_control:
+            label: "{{ item.mount_path }}"
 
-    - name: Mount root BTRFS volumes
-      mount:
-        path: "{{ item.mount_path }}"
-        src: "LABEL={{ item.fs_label }}"
-        fstype: btrfs
-        opts: defaults
-        state: mounted
-      loop: "{{ btrfs.root_volume }}"
-      loop_control:
-        label: "{{ item.mount_path }}"
-      register: root_mount_results
+        - name: Mount root BTRFS volumes
+          mount:
+            path: "{{ item.mount_path }}"
+            src: "LABEL={{ item.fs_label }}"
+            fstype: btrfs
+            opts: defaults
+            state: mounted
+          loop: "{{ btrfs.root_volume }}"
+          loop_control:
+            label: "{{ item.mount_path }}"
+          register: root_mount_results
+      tags:
+        - root_volumes
 
-    - name: Set permissions on mounted filesystems
-      file:
-        path: "{{ item.mount_path }}"
-        mode: '0755'
-        owner: root
-        group: root
-      loop: "{{ btrfs.root_volume }}"
-      loop_control:
-        label: "{{ item.mount_path }}"
-
-    # Subvolume management
-    - name: Check if subvolume mount paths exist and have content
-      stat:
-        path: "{{ item.mount_path }}"
-      register: subvol_mount_check
-      loop: "{{ btrfs.subvolumes }}"
-      loop_control:
-        label: "{{ item.mount_path }}"
-
-    - name: Create temporary backup directories
-      tempfile:
-        state: directory
-        prefix: btrfs_backup_
-      register: temp_backup_dirs
-      loop: "{{ btrfs.subvolumes }}"
-      loop_control:
-        label: "{{ item.mount_path }}"
-
-    - name: Backup existing content from non-empty mount points
-      command: rsync -a --recursive {{ item.0.item.mount_path }}/ {{ item.1.path }}/
-      when: item.0 is defined and item.0.stat.exists and item.0.stat.isdir and item.0.stat.size > 0
-      loop: "{{ subvol_mount_check.results | zip(temp_backup_dirs.results) | list }}"
-      loop_control:
-        label: "{{ item.0.item.mount_path if item.0 is defined else 'undefined' }}"
-      register: backup_results
-      changed_when: backup_results.rc == 0
-
-    - name: Find root volume mount path from label
+    - name: Generate mapping of root volume labels to paths
       set_fact:
         root_volume_paths: "{{ btrfs.root_volume | items2dict(key_name='fs_label', value_name='mount_path') }}"
+      tags:
+        - subvolumes
 
-    - name: Create BTRFS subvolumes
-      command: btrfs subvolume create {{ root_volume_paths[item.root_volume_fs_label] }}/{{ item.subvolume_name }}
-      args:
-        creates: "{{ root_volume_paths[item.root_volume_fs_label] }}/{{ item.subvolume_name }}"
-      loop: "{{ btrfs.subvolumes }}"
-      loop_control:
-        label: "{{ item.subvolume_name }}"
-      register: subvol_create_results
+    - name: Manage BTRFS subvolumes
+      block:
+        - name: Check if subvolumes already exist
+          stat:
+            path: "{{ root_volume_paths[item.root_volume_fs_label] }}/{{ item.subvolume_name }}"
+          register: subvol_exist_check
+          loop: "{{ btrfs.subvolumes }}"
+          loop_control:
+            label: "{{ item.subvolume_name }}"
 
-    - name: Ensure subvolume mount paths exist
-      file:
-        path: "{{ item.mount_path }}"
-        state: directory
-        mode: '0755'
-        owner: root
-        group: root
-      loop: "{{ btrfs.subvolumes }}"
-      loop_control:
-        label: "{{ item.mount_path }}"
+        - name: Check if mount points exist and have content
+          stat:
+            path: "{{ item.item.mount_path }}"
+          register: mount_point_check
+          loop: "{{ subvol_exist_check.results }}"
+          loop_control:
+            label: "{{ item.item.mount_path }}"
 
-    - name: Mount BTRFS subvolumes
-      mount:
-        path: "{{ item.mount_path }}"
-        src: "LABEL={{ item.root_volume_fs_label }}"
-        fstype: btrfs
-        opts: "defaults,subvol={{ item.subvolume_name }}"
-        state: mounted
-      loop: "{{ btrfs.subvolumes }}"
-      loop_control:
-        label: "{{ item.mount_path }}"
-      register: subvol_mount_results
+        - name: Create backup directories only for mount points with content and new subvolumes
+          tempfile:
+            state: directory
+            prefix: btrfs_backup_
+          register: temp_backup_dirs
+          loop: "{{ mount_point_check.results }}"
+          loop_control:
+            label: "{{ item.item.item.mount_path }}"
+          when:
+            - item.stat.exists and item.stat.isdir and item.stat.size > 0
+            - not item.item.stat.exists
 
-    - name: Restore content to mounted subvolumes
-      command: rsync -a --recursive {{ item.1.path }}/ {{ item.0.item.mount_path }}/
-      when: item.0 is defined and item.0.stat.exists and item.0.stat.isdir and item.0.stat.size > 0
-      loop: "{{ subvol_mount_check.results | zip(temp_backup_dirs.results) | list }}"
-      loop_control:
-        label: "{{ item.0.item.mount_path if item.0 is defined else 'undefined' }}"
-      changed_when: true
+        - name: Backup existing content from affected mount points
+          command: rsync -a --recursive {{ item.item.item.item.mount_path }}/ {{ item.path }}/
+          loop: "{{ temp_backup_dirs.results | selectattr('skipped', 'undefined') | list }}"
+          loop_control:
+            label: "{{ item.item.item.item.mount_path }}"
+          register: backup_results
+          changed_when: backup_results.rc == 0
 
-    - name: Clean up temporary backup directories
-      file:
-        path: "{{ item.path }}"
-        state: absent
-      loop: "{{ temp_backup_dirs.results }}"
-      loop_control:
-        label: "{{ item.path }}"
+        - name: Create BTRFS subvolumes if they don't exist
+          command: btrfs subvolume create {{ root_volume_paths[item.root_volume_fs_label] }}/{{ item.subvolume_name }}
+          args:
+            creates: "{{ root_volume_paths[item.root_volume_fs_label] }}/{{ item.subvolume_name }}"
+          loop: "{{ btrfs.subvolumes }}"
+          loop_control:
+            label: "{{ item.subvolume_name }}"
+          register: subvol_create_results
+
+        - name: Ensure subvolume mount paths exist
+          file:
+            path: "{{ item.mount_path }}"
+            state: directory
+            mode: '0755'
+            owner: root
+            group: root
+          loop: "{{ btrfs.subvolumes }}"
+          loop_control:
+            label: "{{ item.mount_path }}"
+
+        - name: Mount BTRFS subvolumes
+          mount:
+            path: "{{ item.mount_path }}"
+            src: "LABEL={{ item.root_volume_fs_label }}"
+            fstype: btrfs
+            opts: "defaults,subvol={{ item.subvolume_name }}"
+            state: mounted
+          loop: "{{ btrfs.subvolumes }}"
+          loop_control:
+            label: "{{ item.mount_path }}"
+          register: subvol_mount_results
+
+        - name: Restore content to mounted subvolumes
+          command: rsync -a --recursive {{ item.path }}/ {{ item.item.item.item.mount_path }}/
+          loop: "{{ temp_backup_dirs.results | selectattr('skipped', 'undefined') | list }}"
+          loop_control:
+            label: "{{ item.item.item.item.mount_path }}"
+          changed_when: true
+          when: temp_backup_dirs.results | selectattr('skipped', 'undefined') | list | length > 0
+
+        - name: Clean up temporary backup directories
+          file:
+            path: "{{ item.path }}"
+            state: absent
+          loop: "{{ temp_backup_dirs.results | selectattr('skipped', 'undefined') | list }}"
+          loop_control:
+            label: "{{ item.path }}"
+          when: temp_backup_dirs.results | selectattr('skipped', 'undefined') | list | length > 0
+      tags:
+        - subvolumes
 
     - name: Summary of BTRFS operations
       debug:
         msg:
           - "BTRFS tools and rsync installed: {{ package_install_result.changed | ternary('Yes', 'Already installed') }}"
-          - "Root volumes formatted: {{ format_results.results | selectattr('changed', 'defined') | selectattr('changed') | map(attribute='item.item.device_name') | list }}"
-          - "Root volumes mounted: {{ root_mount_results.results | selectattr('changed', 'defined') | selectattr('changed') | map(attribute='item.mount_path') | list }}"
-          - "Subvolumes created: {{ subvol_create_results.results | selectattr('changed', 'defined') | selectattr('changed') | map(attribute='item.subvolume_name') | list }}"
-          - "Subvolumes mounted: {{ subvol_mount_results.results | selectattr('changed', 'defined') | selectattr('changed') | map(attribute='item.mount_path') | list }}"
+          - "Root volumes formatted: {{ format_results.results | default([]) | selectattr('changed', 'defined') | selectattr('changed') | map(attribute='item.item.device_name') | list }}"
+          - "Root volumes mounted: {{ root_mount_results.results | default([]) | selectattr('changed', 'defined') | selectattr('changed') | map(attribute='item.mount_path') | list }}"
+          - "Subvolumes created: {{ subvol_create_results.results | default([]) | selectattr('changed', 'defined') | selectattr('changed') | map(attribute='item.subvolume_name') | list }}"
+          - "Subvolumes mounted: {{ subvol_mount_results.results | default([]) | selectattr('changed', 'defined') | selectattr('changed') | map(attribute='item.mount_path') | list }}"
+      tags:
+        - always
