@@ -4,3 +4,27 @@ container_port: "8080"
 
 aws_secrets_manager_secret_names:
   - "homelab/api/tailscale-scope-auth-key"
+
+# TODO: Currently, these are on a shared btrfs subvolume. TBD if that's
+# good/bad.
+host_data_dirs:
+  - path: /mnt/data/ollama-data
+    mode: 0750
+    owner: "{{ host_service_username }}"
+    group: "{{ host_service_username }}"
+  - path: /mnt/data/open-webui-data
+    mode: 0750
+    owner: "{{ host_service_username }}"
+    group: "{{ host_service_username }}"
+  - path: /mnt/data/caddy-data
+    mode: 0750
+    owner: "{{ host_service_username }}"
+    group: "{{ host_service_username }}"
+  - path: /mnt/data/caddy-config
+    mode: 0750
+    owner: "{{ host_service_username }}"
+    group: "{{ host_service_username }}"
+  - path: /mnt/data/tailscale-data
+    mode: 0750
+    owner: "{{ host_service_username }}"
+    group: "{{ host_service_username }}"

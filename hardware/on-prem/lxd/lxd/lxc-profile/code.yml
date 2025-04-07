@@ -1,0 +1,34 @@
+---
+name: base
+description: "Basic Ubuntu 24.04 VM profile with default software"
+config:
+  security.secureboot: "false"
+  boot.autostart: "true"
+  user.user-data: |
+    #cloud-config
+    users:
+      - name: mattjmcnaughton
+        uid: 1000
+        groups: sudo,adm
+        shell: /bin/bash
+        sudo: ['ALL=(ALL) NOPASSWD:ALL']
+        lock_passwd: true
+    package_update: true
+    package_upgrade: true
+    packages:
+      - wget
+      - curl
+      - vim
+    runcmd:
+      - echo "Welcome to your Ubuntu 24.04 VM!" > /etc/motd
+devices:
+  root:
+    path: /
+    pool: default
+    size: 20GB
+    type: disk
+  eth0:
+    name: eth0
+    network: lxdbr0
+    type: nic
+  # TODO: Use btrfs for additional mounts

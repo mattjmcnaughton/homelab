@@ -21,6 +21,8 @@ resource "aws_instance" "instance" {
     delete_on_termination = true
   }
 
+  # TODO: Use cloud-config to create `mattjmcnaughton` as the uid 1000 user.
+
   # User data script from template
   user_data = templatefile("${path.module}/templates/user_data.tftpl", {
     username         = var.username

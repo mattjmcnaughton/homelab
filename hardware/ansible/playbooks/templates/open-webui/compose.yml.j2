@@ -7,7 +7,7 @@ services:
     container_name: ollama
     restart: unless-stopped
     volumes:
-      - ollama-data:/root/.ollama
+      - /mnt/data/ollama-data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
       - CUDA_VISIBLE_DEVICES=
@@ -18,7 +18,7 @@ services:
     container_name: open-webui
     restart: unless-stopped
     volumes:
-      - open-webui-data:/app/backend/data
+      - /mnt/data/open-webui-data:/app/backend/data
     environment:
       - OLLAMA_BASE_URL=http://localhost:11434
       - HOST=0.0.0.0
@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
     hostname: open-webui
     volumes:
-      - tailscale-data:/var/lib/tailscale
+      - /mnt/data/tailscale-data:/var/lib/tailscale
       - tailscale-tmp:/tmp
     environment:
       - TS_STATE_DIR=/var/lib/tailscale
@@ -60,7 +60,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy-data:/data
+      - /mnt/data/caddy-data:/data
       - caddy-config:/config
       - tailscale-tmp:/var/run/tailscale
     depends_on:
@@ -72,9 +72,5 @@ networks:
     driver: bridge
 
 volumes:
-  ollama-data:
-  open-webui-data:
-  caddy-data:
   caddy-config:
-  tailscale-data:
   tailscale-tmp:

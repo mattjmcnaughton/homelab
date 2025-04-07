@@ -4,14 +4,5 @@
 module "tailscale" {
   source = "../../modules/tailscale"
 
-  auth_key_nodes = [
-    {
-      name        = "ec2-open-webui"
-      description = "Open Webui on EC2"
-      reusable    = true
-      ephemeral   = false
-      expiry      = 86400 * 30 # 30 days
-      tags        = ["tag:homelab-auto-provision"]
-    }
-  ]
+  auth_key_nodes = []
 }

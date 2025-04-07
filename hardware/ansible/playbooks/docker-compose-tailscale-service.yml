@@ -5,7 +5,20 @@
     docker_compose_dir: "/home/{{ host_service_username }}/{{ service_name }}-compose"
     aws_secrets: {}   # This will hold our secrets
 
+    host_data_dirs: []
+
   tasks:
+    - name: Create host data directories
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "{{ item.mode | default('0755') }}"
+        owner: "{{ item.owner | default(host_service_username) }}"
+        group: "{{ item.group | default(host_service_username) }}"
+      loop: "{{ host_data_dirs }}"
+      when: host_data_dirs | length > 0
+      become: true
+
     - name: Fetch multiple secrets in a loop
       set_fact:
         aws_secrets: "{{ aws_secrets | combine({item: lookup('amazon.aws.secretsmanager_secret', item, region='us-east-1') | from_json}) }}"
