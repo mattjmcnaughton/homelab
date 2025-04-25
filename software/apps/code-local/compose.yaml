@@ -1,0 +1,208 @@
+services:
+  librechat-mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - librechat-mongodb-data:/data/db
+    networks:
+      - private
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  litellm-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - litellm-postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - private
+    user: postgres
+    cap_drop:
+      - ALL
+
+  librechat-rag-api-pgvector:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    volumes:
+      - librechat-rag-api-pgvector-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${PGVECTOR_DB}
+      POSTGRES_USER: ${PGVECTOR_USER}
+      POSTGRES_PASSWORD: ${PGVECTOR_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGVECTOR_USER} -d ${PGVECTOR_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - private
+    user: postgres
+    cap_drop:
+      - ALL
+
+  ollama:
+    build: ./build/ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "--version"]
+      interval: 5s
+      timeout: 30s
+      retries: 5
+    ports:
+      - "11434:11434"
+    user: "1000:1000"
+    # We package the necessary embedding models into the ollama container (as we
+    # want to airgap ollama). As such, we do not need to worry about mounting in
+    # a volume.
+    networks:
+      - private
+    cap_drop:
+      - ALL
+
+  librechat-rag-api:
+    image: ghcr.io/danny-avila/librechat-rag-api-dev:v0.4.0
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+      librechat-rag-api-pgvector:
+        condition: service_healthy
+    networks:
+      - private
+    environment:
+      - POSTGRES_DB=${PGVECTOR_DB}
+      - POSTGRES_USER=${PGVECTOR_USER}
+      - POSTGRES_PASSWORD=${PGVECTOR_PASSWORD}
+      - DB_HOST=librechat-rag-api-pgvector
+      - OLLAMA_URL=http://ollama:11434
+      - EMBEDDINGS_PROVIDER=ollama
+      - EMBEDDINGS_MODEL=nomic-embed-text
+    healthcheck:
+      test: ["CMD", "ls"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  litellm:
+    image: ghcr.io/berriai/litellm-non_root:main-v1.67.0-stable
+    restart: unless-stopped
+    depends_on:
+      litellm-postgres:
+        condition: service_healthy
+    volumes:
+      - ./build/litellm/config.yaml:/app/config.yaml:ro
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_REGION_NAME=${AWS_REGION_NAME}
+
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
+
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@litellm-postgres:5432/${POSTGRES_DB}
+    command: ["--config", "/app/config.yaml", "--num_workers", "8", "--detailed_debug"]
+    networks:
+      - private
+    ports:
+      - "4000:4000"
+    healthcheck:
+      # Switch to an actual network request once we have curl/wget installed.
+      test: ["CMD", "ls"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+        reservations:
+          memory: 2G
+
+  librechat:
+    image: ghcr.io/danny-avila/librechat:v0.7.7
+    restart: unless-stopped
+    depends_on:
+      librechat-mongodb:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+      librechat-rag-api:
+        condition: service_healthy
+    volumes:
+      - ./build/librechat/librechat.yaml:/app/librechat.yaml:ro
+    environment:
+      - CREDS_KEY=${LIBRECHAT_CREDS_KEY}
+      - CREDS_IV=${LIBRECHAT_CREDS_IV}
+      - JWT_SECRET=${LIBRECHAT_JWT_SECRET}
+      - JWT_REFRESH_SECRET=${LIBRECHAT_JWT_REFRESH_SECRET}
+      - LITELLM_API_KEY=${LIBRECHAT_LITELLM_API_KEY}
+      - MONGO_URI=mongodb://librechat-mongodb:27017/librechat
+      - DOMAIN_CLIENT=http://localhost:3080
+      - DOMAIN_SERVER=http://localhost:3080
+      - NO_INDEX=true
+      - UID=1000
+      - GID=1000
+      - ENDPOINTS=agents,assistants,custom
+
+      - ALLOW_EMAIL_LOGIN=true
+      - ALLOW_REGISTRATION=true
+      - ALLOW_SOCIAL_LOGIN=false
+      - ALLOW_SOCIAL_REGISTRATION=false
+
+      - RAG_API_URL=http://librechat-rag-api:8000
+    networks:
+      - private
+    ports:
+      - "3080:3080"
+    healthcheck:
+      # Switch to an actual network request once we have curl/wget installed.
+      test: ["CMD", "ls"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # TODO: neovim
+  # TODO: traefik-proxy
+  # TODO: claude code
+
+volumes:
+  librechat-mongodb-data:
+    driver: local
+  litellm-postgres-data:
+    driver: local
+  librechat-rag-api-pgvector-data:
+    driver: local
+
+networks:
+  private:
+    driver: bridge
