@@ -1,0 +1,14 @@
+{
+    "diagnostics": {
+        "globals": [
+            "vim"
+        ]
+    },
+    "format": {
+        "enable": true,
+        "defaultConfig": {
+            "indent_size": "space",
+            "indent_size": "2"
+        }
+    }
+}

@@ -43,34 +43,7 @@
 
 - dev
     - workspace
-        - ubuntu:25.04
-            - build/workspace/Dockerfile (can base on toolbox-vim)
-                - Install just, curl, wget, tmux, git, ripgrep
-                - Install neovim 0.11
-                - Install uv, npm, cargo
-                - Install language servers (i.e. pyright, ruff-lsp)
-                - Configure tmux
-                - Configure Neovim
-                    - Plugins
-                        - LazyVim for plugin management
-                        - treesitter
-                        - telescope
-                        - nvim-cmp
-                        - obsidian (only if given a dir as environment variable)
-                        - LSPs
-                    - Configuration
-                        - Default
-                        - Language
-                            - Python
-                            - Yaml
-                            - Bash
-                            - Dockerfile
-                            - Makefile
-                            - Lua
-                    - Write the `nvim-simple-ai` plugin for Vim chats w/
-                      litellm.
-                        - Or see if there's a suitable existing one given that
-                          we're airgapped.
+        - see `build/workspace/README.md`
     - claude-code-container
 
 - overall

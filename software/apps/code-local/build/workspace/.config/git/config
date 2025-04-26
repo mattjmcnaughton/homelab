@@ -1,0 +1,9 @@
+[alias]
+	ff = "merge --ff-only"
+
+[init]
+	defaultBranch = "main"
+
+[user]
+	email = "me@mattjmcnaughton.com"
+	name = "mattjmcnaughton"
