@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  ubuntu:
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu2504
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    networks:
+      - private
+
+  traefik-proxy:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    networks:
+      private:
+        aliases:
+          - "mattjmcnaughton.com"
+      public:
+    environment:
+      PROXY_UPSTREAMS: |
+        mattjmcnaughton.com:443:tls
+
+networks:
+  public:
+    internal: false
+  private:
+    internal: true
