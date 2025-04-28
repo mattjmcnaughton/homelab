@@ -1,14 +1,20 @@
 {
+    "runtime": {
+        "version": "LuaJIT"
+    },
     "diagnostics": {
         "globals": [
             "vim"
-        ]
+        ],
+        "disable": []
+    },
+    "workspace": {
+        "checkThirdParty": false,
     },
     "format": {
-        "enable": true,
-        "defaultConfig": {
-            "indent_size": "space",
-            "indent_size": "2"
-        }
+        "enable": false
+    },
+    "telemetry": {
+        "enable": false
     }
 }

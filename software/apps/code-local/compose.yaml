@@ -200,6 +200,10 @@ services:
     hostname: workspace
     volumes:
       - .:/workspace
+      - ./build/workspace/.config/nvim:/home/mattjmcnaughton/.config/nvim
+    environment:
+      - LITELLM_URL=http://litellm:4000
+      - LITELLM_API_KEY=${LLM_CHAT_LITELLM_API_KEY}
     working_dir: /workspace
     networks:
       - private

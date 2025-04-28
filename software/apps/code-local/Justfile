@@ -19,7 +19,7 @@ up-service SERVICE:
 
 # Execute an interactive bash shell in the workspace container
 # Allows you to run commands directly inside the container
-exec:
+shell:
     {{COMPOSE_CMD}} exec -it {{CONTAINER}} /bin/bash
 
 # Open Neovim editor in the workspace container

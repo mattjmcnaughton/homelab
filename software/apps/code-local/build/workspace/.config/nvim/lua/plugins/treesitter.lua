@@ -6,7 +6,8 @@ return {
       ensure_installed = {
         "rust", "go", "bash", "typescript", "javascript", "lua",
         "python", "json", "yaml", "nix", "dockerfile", "c",
-        "gitcommit", "markdown", "tsx"
+        "gitcommit", "markdown", "tsx", "gitignore", "toml",
+        "markdown_inline", "vimdoc"
       },
 
       sync_install = true,
