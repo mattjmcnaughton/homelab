@@ -22,9 +22,7 @@ LiteLLM, and Ollama.
 
 ## Run
 
-Ensure that the proper `AWS_*` environment variables are in the shell...
-
-`docker compose --env-file .env --env-file .env.secret up --build -d`
+See the commands in `justfile`.
 
 ## Getting Started
 
