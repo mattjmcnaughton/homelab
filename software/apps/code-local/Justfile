@@ -2,41 +2,44 @@
 # This file provides convenience commands for managing Docker containers
 
 # Define variables for repeated values
-ENV_FILE := ".env"
-ENV_SECRET := ".env.secret"
-CONTAINER := "workspace"
-COMPOSE_CMD := "docker compose"
+WORKSPACE_CONTAINER := "workspace"
+CLAUDE_CODE_CONTAINER := "claude-code"
+COMPOSE_CMD := "docker compose --env-file .env --env-file .env.secret"
 
 # Start all containers in detached mode with environment files
 # Builds images if needed and runs in the background
 up:
-    {{COMPOSE_CMD}} --env-file {{ENV_FILE}} --env-file {{ENV_SECRET}} up --build -d
+    {{COMPOSE_CMD}} up --build -d
 
 # Start a specific service in detached mode
 # Usage: just up-service service_name
 up-service SERVICE:
-    {{COMPOSE_CMD}} --env-file {{ENV_FILE}} --env-file {{ENV_SECRET}} up --build -d {{SERVICE}}
+    {{COMPOSE_CMD}} up --build -d {{SERVICE}}
 
 # Execute an interactive bash shell in the workspace container
 # Allows you to run commands directly inside the container
 shell:
-    {{COMPOSE_CMD}} exec -it {{CONTAINER}} /bin/bash
+    {{COMPOSE_CMD}} exec -it {{WORKSPACE_CONTAINER}} /bin/bash
 
 # Open Neovim editor in the workspace container
 # Launches the editor with the current directory mounted
 vim:
-    {{COMPOSE_CMD}} exec -it {{CONTAINER}} nvim .
+    {{COMPOSE_CMD}} exec -it {{WORKSPACE_CONTAINER}} nvim .
+
+claude-code:
+    {{COMPOSE_CMD}} exec -it {{CLAUDE_CODE_CONTAINER}} /bin/bash
+
 
 # Stop and remove all containers using environment files
 # Terminates all running containers in the compose project
 down:
-    {{COMPOSE_CMD}} --env-file {{ENV_FILE}} --env-file {{ENV_SECRET}} down
+    {{COMPOSE_CMD}} down
 
 # Stop and remove a specific service
 # Usage: just down-service service_name
 down-service SERVICE:
-    {{COMPOSE_CMD}} --env-file {{ENV_FILE}} --env-file {{ENV_SECRET}} stop {{SERVICE}}
-    {{COMPOSE_CMD}} --env-file {{ENV_FILE}} --env-file {{ENV_SECRET}} rm -f {{SERVICE}}
+    {{COMPOSE_CMD}} stop {{SERVICE}}
+    {{COMPOSE_CMD}} rm -f {{SERVICE}}
 
 # Display container logs
 # Shows stdout/stderr output from all containers or a specific one
@@ -46,7 +49,7 @@ logs *ARGS:
 # Restart containers
 # Stops and starts containers without rebuilding
 restart:
-    {{COMPOSE_CMD}} --env-file {{ENV_FILE}} --env-file {{ENV_SECRET}} restart
+    {{COMPOSE_CMD}} restart
 
 # Show status of containers
 # Displays running containers and their current state

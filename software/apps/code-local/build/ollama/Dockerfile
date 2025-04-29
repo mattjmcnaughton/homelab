@@ -1,4 +1,6 @@
-FROM docker.io/ollama/ollama:0.6.6
+ARG CONTAINER_REGISTRY=docker.io
+
+FROM ${CONTAINER_REGISTRY}/ollama/ollama:0.6.6
 
 # Need to prefetch, because won't have network access.
 COPY ./pull-models.sh /tmp/pull-models.sh

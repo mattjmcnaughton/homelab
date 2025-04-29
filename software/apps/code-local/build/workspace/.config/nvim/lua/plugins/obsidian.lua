@@ -1,6 +1,11 @@
+local use_obsidian_plugin = false
+if os.getenv("LAZY_VIM_USE_OBSIDIAN_PLUGIN") then
+  use_obsidian_plugin = string.lower(os.getenv("LAZY_VIM_USE_OBSIDIAN_PLUGIN")) == "true"
+end
+
 local vault_dir = os.getenv("OBSIDIAN_VAULT_DIR")
 
-if vault_dir == nil then
+if use_obsidian_plugin and vault_dir == nil then
   return {
     "epwalsh/obsidian.nvim",
 
@@ -8,7 +13,7 @@ if vault_dir == nil then
       "nvim-lua/plenary.nvim",
     }
   }
-else
+elseif use_obsidian_plugin and vault_dir ~= nil then
   return {
     "epwalsh/obsidian.nvim",
 
@@ -78,4 +83,6 @@ else
       end,
     }
   }
+else
+  return {}
 end

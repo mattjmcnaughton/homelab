@@ -1,6 +1,6 @@
 services:
   librechat-mongodb:
-    image: mongo:7
+    image: ${CONTAINER_REGISTRY:-docker.io}/mongo:7
     restart: unless-stopped
     volumes:
       - librechat-mongodb-data:/data/db
@@ -14,7 +14,7 @@ services:
       start_period: 5s
 
   litellm-postgres:
-    image: postgres:16-alpine
+    image: ${CONTAINER_REGISTRY:-docker.io}/postgres:16-alpine
     restart: unless-stopped
     volumes:
       - litellm-postgres-data:/var/lib/postgresql/data
@@ -34,7 +34,7 @@ services:
       - ALL
 
   librechat-rag-api-pgvector:
-    image: pgvector/pgvector:pg17
+    image: ${CONTAINER_REGISTRY:-docker.io}/pgvector/pgvector:pg17
     restart: unless-stopped
     volumes:
       - librechat-rag-api-pgvector-data:/var/lib/postgresql/data
@@ -73,7 +73,7 @@ services:
       - ALL
 
   librechat-rag-api:
-    image: ghcr.io/danny-avila/librechat-rag-api-dev:v0.4.0
+    image: ${CONTAINER_REGISTRY:-ghcr.io}/danny-avila/librechat-rag-api-dev:v0.4.0
     restart: unless-stopped
     depends_on:
       ollama:
@@ -97,7 +97,7 @@ services:
       retries: 5
 
   litellm:
-    image: ghcr.io/berriai/litellm-non_root:main-v1.67.0-stable
+    image: ${CONTAINER_REGISTRY:-ghcr.io}/berriai/litellm-non_root:main-v1.67.0-stable
     restart: unless-stopped
     depends_on:
       litellm-postgres:
@@ -139,7 +139,7 @@ services:
           memory: 2G
 
   librechat:
-    image: ghcr.io/danny-avila/librechat:v0.7.7
+    image: ${CONTAINER_REGISTRY:-ghcr.io}/danny-avila/librechat:v0.7.7
     restart: unless-stopped
     depends_on:
       librechat-mongodb:
@@ -192,7 +192,8 @@ services:
           memory: 2G
 
   workspace:
-    build: ./build/workspace
+    build:
+      context: ./build/workspace
     restart: unless-stopped
     stdin_open: true
     tty: true
@@ -200,7 +201,7 @@ services:
     hostname: workspace
     volumes:
       - .:/workspace
-      - ./build/workspace/.config/nvim:/home/mattjmcnaughton/.config/nvim
+      - ./build/workspace/.config/nvim:/home/${WORKSPACE_USERNAME:-mattjmcnaughton}/.config/nvim
     environment:
       - LITELLM_URL=http://litellm:4000
       - LITELLM_API_KEY=${LLM_CHAT_LITELLM_API_KEY}
@@ -210,8 +211,41 @@ services:
     cap_drop:
       - ALL
 
+  claude-code:
+    build:
+      context: ./build/workspace
+      args:
+        USE_CLAUDE_CODE: true
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    user: "1000:1000"
+    hostname: claude-code
+    volumes:
+      - .:/workspace
+      # Afaik, `claude code` does not store any meaningful info locally, so
+      # we don't worry about setting up persistant storage for its container.
+    environment:
+      - LITELLM_URL=http://litellm:4000
+      - LITELLM_API_KEY=${LLM_CHAT_LITELLM_API_KEY}
+
+      - ANTHROPIC_BASE_URL=http://litellm:4000/anthropic
+      - ANTHROPIC_AUTH_TOKEN=${LLM_CHAT_LITELLM_API_KEY}
+      - ANTHROPIC_MODEL=claude-3-7-sonnet-20250219
+      - ANTHROPIC_SMALL_FAST_MODEL=claude-3-5-haiku-20241022
+
+      - DISABLE_PROMPT_CACHING=1
+      - DISABLE_TELEMETRY=1
+      - DISABLE_ERROR_REPORTING=1
+      - DISABLE_AUTOUPDATER=1
+      - DISABLE_BUG_COMMAND=1
+    working_dir: /workspace
+    networks:
+      - private
+    cap_drop:
+      - ALL
+
   # TODO: traefik-proxy
-  # TODO: claude code
 
 volumes:
   librechat-mongodb-data:

@@ -1,8 +1,14 @@
-FROM docker.io/ubuntu:25.04
+ARG CONTAINER_REGISTRY=docker.io
+
+FROM ${CONTAINER_REGISTRY}/ubuntu:25.04
 
 ARG USERNAME=mattjmcnaughton
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
+ARG GIT_NAME=mattjmcnaughton
+ARG GIT_EMAIL=me@mattjmcnaughton
+ARG USE_OBSIDIAN_PLUGIN=false
+ARG USE_CLAUDE_CODE=false
 
 # Create nonroot user
 RUN userdel -r ubuntu
@@ -71,10 +77,12 @@ RUN apt install -y luarocks
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
-# Install pyright via npm
+# Configure npm to install to ~/.local, and ensure ~/.local/bin in path.
 RUN npm config set prefix /home/$USERNAME/.local
-RUN npm install -g pyright
 ENV PATH=$PATH:/home/$USERNAME/.local/bin
+
+# Install pyright
+RUN npm install -g pyright
 
 # Install cargo
 RUN rustup toolchain install stable-gnu
@@ -120,5 +128,25 @@ RUN mkdir -p .config/tmux && chown $USERNAME:$USERNAME .config/tmux
 RUN mkdir -p .config/git && chown $USERNAME:$USERNAME .config/git
 COPY --chown=$USERNAME:$USERNAME .config /home/$USERNAME/.config
 
+# Set the proper Git environment variables
+ENV GIT_AUTHOR_NAME=${GIT_NAME}
+ENV GIT_AUTHOR_EMAIL=${GIT_EMAIL}
+ENV GIT_COMMITTER_NAME=${GIT_NAME}
+ENV GIT_COMMITTER_EMAIL=${GIT_EMAIL}
+
+# Control installing/using plugins
+ENV LAZY_VIM_USE_OBSIDIAN_PLUGIN=${USE_OBSIDIAN_PLUGIN}
+
 # Install plugins via Lazy (and will pre-install treesitter)
 RUN nvim --headless "+Lazy! sync" +qa
+
+# Install (and configure) claude code (if enabled)
+#
+# If `claude config` gets too complicated, we can load in `.claude.json` file.
+RUN if [ "$USE_CLAUDE_CODE" = "true" ]; then \
+        npm install -g @anthropic-ai/claude-code && \
+        claude config add ignorePatterns ".env.*" ".git" "node_modules" "dist" && \
+        claude config set --global theme dark; \
+    else \
+        echo "Skipping claude code installation because USE_CLAUDE_CODE=$USE_CLAUDE_CODE"; \
+    fi
