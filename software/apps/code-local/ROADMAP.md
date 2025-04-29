@@ -46,6 +46,7 @@ Feature complete (at least w.r.t. major features) for v0.0.1!
 
 - bug: Fix `claude-code` so that it doesn't require fetching an Anthropic API
   key (that it will never use) on boot.
+    - I _think_ we want to look into the `apiKeyHelper` script, but tbd.
 - feat: Add the following to LiteLLM (obtaining API keys if necessary):
     - Perplexity
     - OpenAI (i.e. ChatGPT)
