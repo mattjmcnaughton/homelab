@@ -28,6 +28,5 @@ devices:
     size: 20GB
     type: disk
   eth0:
-    name: eth0
-    network: lxdbr0
+    network: macvlan-net
     type: nic

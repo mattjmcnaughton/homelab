@@ -15,13 +15,18 @@ On our on-prem hardware.
 
 ```
 sudo snap install lxd
-sudo lxd init
-    - All default settings, with the exception of using `dir` as the storage
-      backend, instead of `zfs`.
+`lxd init`
+    - Use `dir` as the storage backend instead of `zfs`.
+    - Set "no" for creating a new local network bridge.
+    - Set "no" for configuring LXD to use an existing bridge or host interface.
+`lxc network create macvlan-net --type=macvlan parent=enp0s31f6`
+`lxc profile device add default eth0 nic network=macvlan-net`
 ```
 
-We do NOT try and generate a preseed file. I'm not sure why, but when using the
-preseed file, we had issues with network connectivity.
+We intentionally use a `macvlan`. We had unpredictable results using the default
+`bridge`. We'd see, for example, that `ghcr.io` wouldn't resolve but `docker.io`
+would. We hope to avoid all this using `macvlan`. Since we're using tailscale
+for all connections, this should work out well for us.
 
 ## Create profiles
 
@@ -75,6 +80,16 @@ sudo ./launch-tailscale.sh ${TS_AUTH_KEY_ONE_OFF} $HOSTNAME
 rm -rf /tmp/bootstrap-scripts
 ```
 
+### Mount btrfs storage
+
+From the on-prem host.
+
+`lxc config device add $VM-NAME $DEVICE-NAME disk source=/path/on/host path=/path/on/target`
+
+For example, to mount in the `@vm-docker-compose-data` BtrFS subvolume, we would do the following:
+
+`lxc config device add vm-docker-compose btrfs-data disk source=/mnt/vm-docker-compose-data path=/mnt/data`
+
 ### On host
 
 We can now configure the VM via ansible.
@@ -82,14 +97,6 @@ We can now configure the VM via ansible.
 - Update `inventory/hosts.yml` and `inventory/host_vars/$VM-HOSTNAME`.
     - As of 2025-05, we manage btrfs on `op-ampere` and then mount into VMs. We do not do
       any btrfs operations within our VMs.
-
-### Mount btrfs storage
-
-`lxc config device add $VM-NAME $DEVICE-NAME disk source=/path/on/host path=/path/on/target`
-
-For example, to mount in the `@vm-docker-compose-data` BtrFS subvolume, we would do the following:
-
-`lxc config device add vm-docker-compose btrfs-data disk source=/mnt/vm-docker-compose-data path=/mnt/data`
 
 ## Manage instances
 

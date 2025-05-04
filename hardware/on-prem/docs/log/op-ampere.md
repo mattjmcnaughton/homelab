@@ -127,7 +127,17 @@ We can now run ansible targeted at `op-ampere`.
 
 ## Install LXC/LXD
 
-TODO
+- See `vm/lxd/README.md`.
+
+Note, there's been a lot of ... fiddling ... to try and get network connections
+working in lxd, but I think we're finally there using `macvlan` instead of
+`bridge`.
+
+At one point, we uninstalled docker and manually cleaned up the `iptables`
+rules. However, since we reinstalled docker and added them back.
+
+That said, if we ever notice anything funky with networking on this machine, we
+should be open to doing a reinstall.
 
 ## Install k3s (inside LXC VMs)
 
