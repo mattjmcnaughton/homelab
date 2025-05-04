@@ -59,9 +59,9 @@
           file:
             path: "{{ item.mount_path }}"
             state: directory
-            mode: '0755'
-            owner: root
-            group: root
+            mode: '{{ item.mode | default("0755") }}'
+            owner: "{{ item.owner | default('root') }}"
+            group: "{{ item.group | default('root') }}"
           loop: "{{ btrfs.root_volume }}"
           loop_control:
             label: "{{ item.mount_path }}"
@@ -137,9 +137,9 @@
           file:
             path: "{{ item.mount_path }}"
             state: directory
-            mode: '0755'
-            owner: root
-            group: root
+            mode: '{{ item.mode | default("0755") }}'
+            owner: "{{ item.owner | default('root') }}"
+            group: "{{ item.group | default('root') }}"
           loop: "{{ btrfs.subvolumes }}"
           loop_control:
             label: "{{ item.mount_path }}"

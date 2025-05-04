@@ -16,6 +16,18 @@ btrfs:
     - root_volume_fs_label: encrypted_btrfs
       subvolume_name: "@home"
       mount_path: /home
+      mode: "0750"
+      owner: mattjmcnaughton
+      group: mattjmcnaughton
     - root_volume_fs_label: encrypted_btrfs
       subvolume_name: "@data"
       mount_path: /mnt/data
+      mode: "0750"
+      owner: mattjmcnaughton
+      group: mattjmcnaughton
+    - root_volume_fs_label: encrypted_btrfs
+      subvolume_name: "@vm-docker-compose-data"
+      mount_path: /mnt/vm-docker-compose-data
+      mode: "0750"
+      owner: mattjmcnaughton
+      group: mattjmcnaughton

@@ -31,4 +31,3 @@ devices:
     name: eth0
     network: lxdbr0
     type: nic
-  # TODO: Use btrfs for additional mounts
