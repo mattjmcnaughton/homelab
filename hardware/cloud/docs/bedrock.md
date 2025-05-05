@@ -12,6 +12,7 @@ As of 2025-05, I've request access to the following models in `us-east-1`:
 - Chat
     - Llama 3.3 70B Instruct
     - Llama 3.2 3B Instruct
+    - Llama 4 Scout + Maverick
     - Titan Text G1 - Premier
     - Mistral 7B Instruct
     - DeepSeek R1

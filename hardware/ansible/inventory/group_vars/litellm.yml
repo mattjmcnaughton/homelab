@@ -1,0 +1,22 @@
+---
+service_name: "litellm"
+container_port: "4000"
+
+host_data_dir_owner: "mattjmcnaughton"
+
+aws_secrets_manager_secret_names:
+  - "homelab/api/tailscale-scope-auth-key"
+  - "homelab/service-user/litellm-aws"
+  - "homelab/app/litellm"
+
+# TODO: Currently, these are on a shared btrfs subvolume. TBD if that's
+# good/bad.
+host_data_dirs:
+  - path: /mnt/data/litellm-postgres-data
+    mode: "0700"  # required by postgres
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/litellm-caddy-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"

@@ -1,0 +1,90 @@
+---
+model_list:
+  - model_name: anthropic-claude-3-7-sonnet
+    litellm_params:
+      model: anthropic/claude-3-7-sonnet-20250219
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # TODO: Set-up Perplexity
+  # TODO: Set-up ChatGPT
+
+  - model_name: bedrock-titan-text-g1-premier
+    litellm_params:
+      model: bedrock/amazon.titan-text-premier-v1:0
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-titan-image-generator-v2
+    litellm_params:
+      model: bedrock/amazon.titan-image-generator-v2:0
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-deepseek-r1
+    litellm_params:
+      model: bedrock/deepseek.r1-v1:0
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-llama3-3-70b-instruct
+    litellm_params:
+      model: bedrock/us.meta.llama3-3-70b-instruct-v1:0
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-llama4-maverick-17b-instruct
+    litellm_params:
+      model: bedrock/us.meta.llama4-maverick-17b-instruct-v1:0
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-llama4-scout-17b-instruct
+    litellm_params:
+      model: bedrock/us.meta.llama4-maverick-17b-instruct-v1:0
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-llama3-2-3b-instruct
+    litellm_params:
+      model: bedrock/us.meta.llama3-2-3b-instruct-v1:0
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-mistral-7b-instruct
+    litellm_params:
+      model: bedrock/mistral.mistral-7b-instruct-v0:2
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-stability-sd3-5-large
+    litellm_params:
+      model: bedrock/stability.sd3-5-large-v1:0
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: us-west-2
+
+# TODO: Set-up ChatGPT so can start using Assistants
+# assistant_settings: [] https://docs.litellm.ai/docs/assistants#quick-start
+
+litellm_settings:
+  # Drop unsupported OpenAI params - https://docs.litellm.ai/docs/completion/input
+  drop_params: true
+  disable_telemetry: true
+  request_timeout: 600
+  redact_user_api_key_info: true
+  set_verbose: false
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  allow_requests_on_db_unavailable: true
+  store_model_in:db: true
+  store_prompts_in_spend_logs: true
