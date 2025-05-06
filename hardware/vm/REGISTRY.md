@@ -7,9 +7,10 @@
 - id_: vm-docker-compose
     - on-prem-host: op-ampere
     - specs:
-        cpu: 1cpu
-        mem: 4GB
-        disk: @vm-docker-compose-data
+        cpu: 2cpu
+        mem: 6GB
+        base-disk: 40GB
+        mounted-disk: @vm-docker-compose-data
         lxd-profile: base
     - name: vm-docker-compose
     - current-usage: Running applications via docker-compose. A "staging"

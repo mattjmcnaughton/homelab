@@ -1,10 +1,10 @@
 ---
 services:
-  litellm-postgres:
-    image: ${CONTAINER_REGISTRY:-docker.io}/postgres:16-alpine
+  open-webui-postgres:
+    image: ${CONTAINER_REGISTRY:-docker.io}/pgvector/pgvector:pg16
     restart: unless-stopped
     volumes:
-      - /mnt/data/litellm-postgres-data:/var/lib/postgresql/data
+      - /mnt/data/open-webui-postgres-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -19,28 +19,42 @@ services:
     cap_drop:
       - ALL
 
-  litellm:
-    image: ${CONTAINER_REGISTRY:-ghcr.io}/berriai/litellm-non_root:main-v1.67.0-stable
+  open-webui:
+    image: ${CONTAINER_REGISTRY:-ghcr.io}/open-webui/open-webui:main
     restart: unless-stopped
     depends_on:
-      litellm-postgres:
+      open-webui-postgres:
         condition: service_healthy
     volumes:
-      - ./litellm.config.yaml:/app/config.yaml:ro
+      - /mnt/data/open-webui-open-webui-data:/app/backend/data
     environment:
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_REGION_NAME=${AWS_REGION_NAME}
+      # https://docs.openwebui.com/getting-started/env-configuration/
 
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - PERPLEXITYAI_API_KEY=${PERPLEXITYAI_API_KEY}
+      # TBD if necessary... might be an ollama variable.
+      - HF_HUB_OFFLINE=1
+
+      - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
 
-      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
-      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
-
+      # For now, we share a single db for PGVECTOR and "vanilla" postgres. We
+      # could change this later.
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}
-    command: ["--config", "/app/config.yaml", "--num_workers", "8", "--detailed_debug"]
+
+      - VECTOR_DB=pgvector
+      - PGVECTOR_MAX_DIMENSION=1536
+
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+
+      - ENABLE_CODE_EXECUTION=False
+      - ENABLE_CODE_INTERPRETER=False
+      - ENABLE_WEB_SEARCH=False
+
+      - WEBUI_SESSION_COOKIE_SAME_SITE=strict
+      - WEBUI_SESSION_COOKIE_SECURE=True
+
+      - OFFLINE_MODE=True
+      - DISABLE_TELEMETRY=True
+      - DISABLE_USAGE_STATS=True
     healthcheck:
       # Switch to an actual network request once we have curl/wget installed.
       test: ["CMD", "ls"]
@@ -54,15 +68,15 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G
+          memory: 2G
         reservations:
-          memory: 1G
+          memory: 512M
     network_mode: service:tailscale
 
   tailscale:
     image: tailscale/tailscale:latest
     restart: unless-stopped
-    hostname: litellm
+    hostname: open-webui
     volumes:
       - tailscale-tmp:/tmp
     environment:
@@ -82,11 +96,11 @@ services:
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
-      - /mnt/data/litellm-caddy-data:/data
+      - /mnt/data/open-webui-caddy-data:/data
       - caddy-config-tmp:/config
       - tailscale-tmp:/var/run/tailscale
     depends_on:
-      - litellm
+      - open-webui
     network_mode: service:tailscale
 
 networks:

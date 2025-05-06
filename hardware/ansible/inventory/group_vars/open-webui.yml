@@ -1,0 +1,25 @@
+---
+service_name: "open-webui"
+container_port: "8080"
+
+host_data_dir_owner: "mattjmcnaughton"
+
+aws_secrets_manager_secret_names:
+  - "homelab/api/tailscale-scope-auth-key"
+  - "homelab/app/open-webui"
+
+# TODO: Currently, these are on a shared btrfs subvolume. TBD if that's
+# good/bad.
+host_data_dirs:
+  - path: /mnt/data/open-webui-postgres-data
+    mode: "0700"  # required by postgres
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/open-webui-open-webui-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/open-webui-caddy-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
