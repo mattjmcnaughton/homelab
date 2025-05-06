@@ -5,8 +5,65 @@ model_list:
       model: anthropic/claude-3-7-sonnet-20250219
       api_key: os.environ/ANTHROPIC_API_KEY
 
-  # TODO: Set-up Perplexity
-  # TODO: Set-up ChatGPT
+  - model_name: openai-gpt-4.1
+    litellm_params:
+      model: openai/gpt-4.1
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: openai-gpt-4.1-mini
+    litellm_params:
+      model: openai/gpt-4.1-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: openai-gpt-4.1-nano
+    litellm_params:
+      model: openai/gpt-4.1-nano
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: openai-gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: openai-gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: openai-gpt-o4-mini
+    litellm_params:
+      model: openai/gpt-o4-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: openai-gpt-image-1
+    litellm_params:
+      model: openai/gpt-image-1
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: openai-dall-e-3
+    litellm_params:
+      model: openai/dall-e-3
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: perplexity-sonar-deep-research
+    litellm_params:
+      model: perplexity/sonar-deep-research
+      api_key: os.environ/PERPLEXITYAI_API_KEY
+
+  - model_name: perplexity-sonar-reasoning-pro
+    litellm_params:
+      model: perplexity/sonar-reasoning-pro
+      api_key: os.environ/PERPLEXITYAI_API_KEY
+
+  - model_name: perplexity-sonar-pro
+    litellm_params:
+      model: perplexity/sonar-pro
+      api_key: os.environ/PERPLEXITYAI_API_KEY
+
+  - model_name: perplexity-sonar
+    litellm_params:
+      model: perplexity/sonar
+      api_key: os.environ/PERPLEXITYAI_API_KEY
 
   - model_name: bedrock-titan-text-g1-premier
     litellm_params:
@@ -71,8 +128,10 @@ model_list:
       aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
       aws_region_name: us-west-2
 
-# TODO: Set-up ChatGPT so can start using Assistants
-# assistant_settings: [] https://docs.litellm.ai/docs/assistants#quick-start
+assistant_settings:
+  custom_llm_provider: openai
+  litellm_params:
+    api_key: os.environ/OPENAI_API_KEY
 
 litellm_settings:
   # Drop unsupported OpenAI params - https://docs.litellm.ai/docs/completion/input
