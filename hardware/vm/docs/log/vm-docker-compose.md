@@ -2,6 +2,9 @@
 
 ## Changelog
 
+- 2025-05-07
+    - Upgraded to 10GB mem and 3CPU.
+
 - 2025-05-06
     - Upgraded to 6GB mem and 2CPU via `lxc config set vm-docker-compose
       limits.memory 6GB` and `lxc config set vm-docker-compose limits.cpu 2`
