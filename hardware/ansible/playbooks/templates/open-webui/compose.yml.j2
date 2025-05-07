@@ -19,11 +19,28 @@ services:
     cap_drop:
       - ALL
 
+  open-webui-tika:
+    image: ${CONTAINER_REGISTRY:-docker.io}/apache/tika:latest-full
+    restart: unless-stopped
+    network_mode: service:tailscale
+    healthcheck:
+      # Switch to an actual network request once we have curl/wget installed.
+      test: ["CMD", "ls"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+
   open-webui:
-    image: ${CONTAINER_REGISTRY:-ghcr.io}/open-webui/open-webui:main
+    image: ${CONTAINER_REGISTRY:-ghcr.io}/open-webui/open-webui:v0.6.7
     restart: unless-stopped
     depends_on:
       open-webui-postgres:
+        condition: service_healthy
+      open-webui-tika:
         condition: service_healthy
     volumes:
       - /mnt/data/open-webui-open-webui-data:/app/backend/data
@@ -35,6 +52,19 @@ services:
 
       - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      - IMAGE_GENERATION_ENGINE=openai
+      - ENABLE_IMAGE_GENERATION=True
+      - IMAGES_OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
+      - IMAGES_OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      - RAG_EMBEDDING_ENGINE=openai
+      - RAG_EMBEEDING_MODEL=bedrock-cohere-embed-english-v3
+      - PDF_EXTRACT_IMAGES=True
+      - RAG_OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
+      - RAG_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CONTENT_EXTRACTION_ENGINE=tika
+      - TIKA_SERVER_URL=http://localhost:9998
 
       # For now, we share a single db for PGVECTOR and "vanilla" postgres. We
       # could change this later.

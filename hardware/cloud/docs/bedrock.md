@@ -15,6 +15,7 @@ As of 2025-05, I've request access to the following models in `us-east-1`:
     - Llama 4 Scout + Maverick
     - Titan Text G1 - Premier
     - Mistral 7B Instruct
+    - Mistral 8x7B Instruct
     - DeepSeek R1
         - There's no indication that using DeepSeek for _personal_ projects is
           prohibited. By using via AWS, it's staying on AWS servers.
@@ -22,8 +23,9 @@ As of 2025-05, I've request access to the following models in `us-east-1`:
 - Embeddings:
     - Titan Text Embeddings V2
     - Cohere Embed English
-- Titan Image Generator G1 v2
-- Stable Diffusion 3.5 Large (us-west-2 only)
+- Image:
+    - Titan Image Generator G1 v2
+    - Stable Diffusion 3.5 Large (us-west-2 only)
 
 We do _not_ use Anthropic models on AWS, because I don't want to reach out to
 request access from Anthropic yet.
