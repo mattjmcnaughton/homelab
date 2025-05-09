@@ -1,0 +1,145 @@
+---
+services:
+  librechat-mongodb:
+    image: ${CONTAINER_REGISTRY:-docker.io}/mongo:7
+    restart: unless-stopped
+    volumes:
+      - /mnt/data/librechat-mongodb-data:/data/db
+    network_mode: service:tailscale
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    user: "1000:1000"
+
+  librechat-rag-api-pgvector:
+    image: ${CONTAINER_REGISTRY:-docker.io}/pgvector/pgvector:pg16
+    restart: unless-stopped
+    volumes:
+      - /mnt/data/librechat-rag-api-pgvector-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${PGVECTOR_DB}
+      POSTGRES_USER: ${PGVECTOR_USER}
+      POSTGRES_PASSWORD: ${PGVECTOR_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGVECTOR_USER} -d ${PGVECTOR_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    network_mode: service:tailscale
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+
+  librechat-rag-api:
+    image: ${CONTAINER_REGISTRY:-ghcr.io}/danny-avila/librechat-rag-api-dev:v0.4.0
+    restart: unless-stopped
+    depends_on:
+      librechat-rag-api-pgvector:
+        condition: service_healthy
+    network_mode: service:tailscale
+    environment:
+      - POSTGRES_DB=${PGVECTOR_DB}
+      - POSTGRES_USER=${PGVECTOR_USER}
+      - POSTGRES_PASSWORD=${PGVECTOR_PASSWORD}
+      - DB_HOST=localhost
+      - RAG_OPENAI_BASEURL=${RAG_OPENAI_BASEURL}
+      - RAG_OPENAI_API_KEY=${RAG_OPENAI_API_KEY}
+      - EMBEDDINGS_PROVIDER=openai
+      - EMBEDDINGS_MODEL=bedrock-cohere-embed-english-v3
+    healthcheck:
+      test: ["CMD", "ls"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  librechat:
+    image: ${CONTAINER_REGISTRY:-ghcr.io}/danny-avila/librechat:v0.7.7
+    restart: unless-stopped
+    depends_on:
+      librechat-mongodb:
+        condition: service_healthy
+      librechat-rag-api:
+        condition: service_healthy
+    volumes:
+      - ./librechat.yaml:/app/librechat.yaml:ro
+    environment:
+      - CREDS_KEY=${LIBRECHAT_CREDS_KEY}
+      - CREDS_IV=${LIBRECHAT_CREDS_IV}
+      - JWT_SECRET=${LIBRECHAT_JWT_SECRET}
+      - JWT_REFRESH_SECRET=${LIBRECHAT_JWT_REFRESH_SECRET}
+      - LITELLM_API_BASE_URL=${LITELLM_API_BASE_URL}
+      - LITELLM_API_KEY=${LITELLM_API_KEY}
+      - MONGO_URI=mongodb://localhost:27017/librechat
+      - DOMAIN_CLIENT=http://localhost:3080
+      - DOMAIN_SERVER=http://localhost:3080
+      - NO_INDEX=true
+      - UID=1000
+      - GID=1000
+      - ENDPOINTS=agents,assistants,custom
+
+      - ALLOW_EMAIL_LOGIN=true
+      - ALLOW_REGISTRATION=true
+      - ALLOW_SOCIAL_LOGIN=false
+      - ALLOW_SOCIAL_REGISTRATION=false
+
+      - RAG_API_URL=http://localhost:8000
+      - ASSISTANTS_BASE_URL=${ASSISTANTS_BASE_URL}
+      - ASSISTANTS_API_KEY=${ASSISTANTS_API_KEY}
+    healthcheck:
+      # Switch to an actual network request once we have curl/wget installed.
+      test: ["CMD", "ls"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    network_mode: service:tailscale
+
+  tailscale:
+    image: tailscale/tailscale:latest
+    restart: unless-stopped
+    hostname: librechat
+    volumes:
+      - tailscale-tmp:/tmp
+    environment:
+      - TS_HOSTNAME={{ service_name }}
+      - TS_USERSPACE=true
+      - TS_EXTRA_ARGS=--advertise-tags={{ tailscale_advertise_tags_arg }}
+      - TS_SOCKET=/tmp/tailscaled.sock
+    cap_add:
+      - NET_ADMIN
+    env_file:
+      - .env.tailscale
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - /mnt/data/librechat-caddy-data:/data
+      - caddy-config-tmp:/config
+      - tailscale-tmp:/var/run/tailscale
+    depends_on:
+      - librechat
+    network_mode: service:tailscale
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  caddy-config-tmp:
+  tailscale-tmp:

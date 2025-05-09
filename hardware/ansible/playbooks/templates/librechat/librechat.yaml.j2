@@ -1,0 +1,25 @@
+version: 1.0.8
+cache: true
+fileStrategy: "local"
+
+fileConfig:
+  serverFileSizeLimit: 1000
+
+endpoints:
+  agents:
+    disableBuilder: false
+  assistants:
+    disableBuilder: false
+  custom:
+      - name: "Lite LLM"
+        apiKey: "${LITELLM_API_KEY}"
+        baseURL: "${LITELLM_API_BASE_URL}"
+        # A "default" model to start new users with. The "fetch" will pull the rest of the available models from LiteLLM
+        # More or less this is "irrelevant", you can pick any model. Just pick one you have defined in LiteLLM.
+        models:
+          default: ["bedrock-anthropic-claude-3-7-sonnet"]
+          fetch: true
+        titleConvo: false
+        summarize: false
+        forcePrompt: false
+        modelDisplayLabel: "Lite LLM"

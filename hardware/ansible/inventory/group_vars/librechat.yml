@@ -1,0 +1,25 @@
+---
+service_name: "librechat"
+container_port: "3080"
+
+host_data_dir_owner: "mattjmcnaughton"
+
+aws_secrets_manager_secret_names:
+  - "homelab/api/tailscale-scope-auth-key"
+  - "homelab/app/librechat"
+
+# TODO: Currently, these are on a shared btrfs subvolume. TBD if that's
+# good/bad.
+host_data_dirs:
+  - path: /mnt/data/librechat-rag-api-pgvector-data
+    mode: "0700"  # required by postgres
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/librechat-mongodb-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/librechat-caddy-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
