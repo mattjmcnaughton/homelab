@@ -31,3 +31,9 @@ btrfs:
       mode: "0750"
       owner: mattjmcnaughton
       group: mattjmcnaughton
+    - root_volume_fs_label: encrypted_btrfs
+      subvolume_name: "@vm-code-data"
+      mount_path: /mnt/vm-code-data
+      mode: "0750"
+      owner: mattjmcnaughton
+      group: mattjmcnaughton

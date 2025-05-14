@@ -1,0 +1,12 @@
+---
+hostname: vm-code
+
+users:
+  - username: mattjmcnaughton
+    is_sudo: true
+    groups:
+      - docker
+
+btrfs:
+  root_volume: []
+  subvolumes: []
