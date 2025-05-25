@@ -2,6 +2,12 @@
 
 ## Changelog
 
+- 2025-05-25
+    - Increased disk space again via `lxc config device set vm-docker-compose
+      root size=80GiB`
+        - Note the use of `set` instead of `override`, because we've already
+          done the `override`.
+
 - 2025-05-07
     - Upgraded to 10GB mem and 3CPU.
 
