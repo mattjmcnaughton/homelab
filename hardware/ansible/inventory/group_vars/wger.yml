@@ -1,0 +1,33 @@
+---
+service_name: "wger"
+container_port: "8000"
+
+host_data_dir_owner: "mattjmcnaughton"
+
+aws_secrets_manager_secret_names:
+  - "homelab/api/tailscale-scope-auth-key"
+  - "homelab/app/wger"
+
+# TODO: Currently, these are on a shared btrfs subvolume. TBD if that's
+# good/bad.
+host_data_dirs:
+  - path: /mnt/data/wger-postgres-data
+    mode: "0700"  # required by postgres
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/wger-redis-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/wger-wger-media
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/wger-wger-static
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/wger-caddy-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
