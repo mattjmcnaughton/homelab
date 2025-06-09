@@ -18,6 +18,33 @@ Tracking what I've got and what it's being used for.
     - specs: 512 GB SSD
     - previous-usage: NixOS (cow) install. Verified not singular data store.
     - current-usage: Attached as btrfs storage to `op-ampere`.
+- id_: rasp-pi-4-0
+    - type: compute
+    - specs: 4 CPUs (1.5 GHz), 4GB Ram, 32GB Micro SSD
+    - name: n-a
+    - current-usage: Using as a Home Assistant appliance (see
+      [docs](../../software/apps/home-assistant/README.md) for full instructions).
+- id_: rasp-pi-4-1
+    - type: compute
+    - specs: 4 CPUs (1.5 GHz), 4GB Ram, 32GB Micro SSD; attachted 1 128GB USB
+    - name: op-apple
+    - current-usage: nas. See [docs](../../software/apps/nas/README.md).
+- id_: rasp-pi-4-2
+    - type: compute
+    - specs: 4 CPUs (1.5 GHz), 4GB Ram, 32GB Micro SSD; attached 2 32GB USB
+    - name: op-blueberry
+    - current-usage: nas (focused specifically on backup server). See [docs](../../software/apps/nas/README.md).
+
+### WIP
+
+- id_: thinkpad-x220
+    - type: compute
+    - annotation: Thinkpad x220
+    - specs: TBD
+    - current-usage: TBD
+    - pending-upgrades: Upgrade to 16GB Ram, SSD(s)
+    - notes:
+        - Attempted to install ubuntu 24.04, but it failed repeatedly.
 
 ### Not-used
 
@@ -26,11 +53,6 @@ Tracking what I've got and what it's being used for.
 - id_: thinkpad-x220
     - type: compute
     - annotation: Thinkpad x220
-    - specs: TBD
-    - planned-usage: TBD
-    - current-usage: TBD
-- id_: rasperry-pi-4-{0..2}
-    - type: compute
     - specs: TBD
     - planned-usage: TBD
     - current-usage: TBD
