@@ -61,6 +61,31 @@ Tracking what I've got and what it's being used for.
 
 - id_: $TBD - m2 SSD
 
+### On-deck
+
+- Wild Dog Pro
+    - Upgrades
+        - 2 16 GB DDR4 RAM (2400 MT/s, 1.2V)
+        - TBD re harddrives
+            - Parity disk for current 512GB SSD
+- ThinkPad X220
+    - Upgrades
+        - 2 sticks of 8GB DDR3 RAM (for a total of 16GB)
+        - TBD re harddrives (both SSDs)
+            - 2.5 Sata
+            - ...
+- Network Switch
+    - 4-8 slots?
+    - Support PoE
+- Blank USBs for ISOs
+- tbd: fake HDMI connector for laptop to run as server
+- tbd: Support m2 mounting over $TBD
+    - For usage w/ Raspberry PI
+- tbd: desk-setup
+    - Mic
+    - Camera
+    - Monitor arm
+
 ## Notes
 
 - Do not include laptops which are solely used as "terminals".
