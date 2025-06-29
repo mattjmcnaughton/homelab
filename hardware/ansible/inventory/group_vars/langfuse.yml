@@ -1,0 +1,29 @@
+---
+service_name: "langfuse"
+container_port: "3000"
+
+host_data_dir_owner: "mattjmcnaughton"
+
+aws_secrets_manager_secret_names:
+  - "homelab/api/tailscale-scope-auth-key"
+  - "homelab/app/langfuse"
+
+# TODO: Currently, these are on a shared btrfs subvolume. TBD if that's
+# good/bad.
+host_data_dirs:
+  - path: /mnt/data/langfuse-postgres-data
+    mode: "0700"  # required by postgres
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/langfuse-clickhouse-data
+    mode: "0700"  # tbd if clickhouse requires, but no downside
+    owner: "101"  # required by clickhouse container
+    group: "101"
+  - path: /mnt/data/langfuse-minio-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
+  - path: /mnt/data/langfuse-caddy-data
+    mode: "0750"
+    owner: "{{ host_data_dir_owner }}"
+    group: "{{ host_data_dir_owner }}"
