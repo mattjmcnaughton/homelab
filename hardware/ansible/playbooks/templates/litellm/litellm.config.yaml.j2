@@ -15,34 +15,21 @@ model_list:
       model: anthropic/claude-opus-4-20250514
       api_key: os.environ/ANTHROPIC_API_KEY
 
-  - model_name: openai-gpt-4.1
-    litellm_params:
-      model: openai/gpt-4.1
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: openai-gpt-4.1-mini
-    litellm_params:
-      model: openai/gpt-4.1-mini
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: openai-gpt-4.1-nano
-    litellm_params:
-      model: openai/gpt-4.1-nano
-      api_key: os.environ/OPENAI_API_KEY
-
+  # Best "fast" OpenAI
   - model_name: openai-gpt-4o
     litellm_params:
       model: openai/gpt-4o
       api_key: os.environ/OPENAI_API_KEY
 
-  - model_name: openai-gpt-4o-mini
+  # Best "richer" OpenAI
+  - model_name: openai-gpt-4.5-preview-2025-02-27
     litellm_params:
-      model: openai/gpt-4o-mini
+      model: openai/gpt-4.5-preview-2025-02-27
       api_key: os.environ/OPENAI_API_KEY
 
-  - model_name: openai-gpt-o4-mini
+  - model_name: openai-o4-mini
     litellm_params:
-      model: openai/gpt-o4-mini
+      model: openai/o4-mini
       api_key: os.environ/OPENAI_API_KEY
 
   - model_name: openai-gpt-image-1
@@ -54,6 +41,16 @@ model_list:
     litellm_params:
       model: openai/dall-e-3
       api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: google-gemini-2.5-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: google-gemini-2.5-pro
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+      api_key: os.environ/GEMINI_API_KEY
 
   - model_name: perplexity-sonar-deep-research
     litellm_params:
