@@ -2,6 +2,10 @@
 
 ## Changelog
 
+### 2025-08-01
+
+- Terminated - replace by MacOS for dev. Only downsides to dev on a VM.
+
 ### 2025-05-18
 
 - Initial configuration v0.1.0 of workbench!

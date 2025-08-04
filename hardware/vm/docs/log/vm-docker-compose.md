@@ -2,6 +2,9 @@
 
 ## Changelog
 
+- 2025-08-04
+  - Increased memory to 14GB
+
 - 2025-05-25
     - Increased disk space again via `lxc config device set vm-docker-compose
       root size=80GiB`
