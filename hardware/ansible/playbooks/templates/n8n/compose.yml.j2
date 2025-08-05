@@ -1,0 +1,188 @@
+---
+services:
+  n8n-postgres:
+    image: ${CONTAINER_REGISTRY:-docker.io}/postgres:16
+    restart: unless-stopped
+    volumes:
+      - /mnt/data/n8n-postgres-data:/var/lib/postgresql/data
+      - ./init-data.sh:/docker-entrypoint-initdb.d/init-data.sh
+    environment:
+      POSTGRES_DB: ${N8N_POSTGRES_DB}
+      POSTGRES_USER: ${N8N_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${N8N_POSTGRES_PASSWORD}
+      POSTGRES_NON_ROOT_USER: ${N8N_POSTGRES_NON_ROOT_USER}
+      POSTGRES_NON_ROOT_PASSWORD: ${N8N_POSTGRES_NON_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${N8N_POSTGRES_USER} -d ${N8N_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    network_mode: service:tailscale
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+
+  n8n-redis:
+    image: ${CONTAINER_REGISTRY:-docker.io}/redis:6-alpine
+    restart: unless-stopped
+    volumes:
+      - /mnt/data/n8n-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    network_mode: service:tailscale
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    # Because writing to file system, seems fine being non-root.
+
+  n8n:
+    image: ${CONTAINER_REGISTRY:-docker.io}/n8nio/n8n
+    restart: unless-stopped
+    depends_on:
+      n8n-postgres:
+        condition: service_healthy
+      n8n-redis:
+        condition: service_healthy
+    volumes:
+      - /mnt/data/n8n-n8n-data:/home/node/.n8n
+    environment:
+      # Database configuration
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=localhost
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${N8N_POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${N8N_POSTGRES_NON_ROOT_USER}
+      - DB_POSTGRESDB_PASSWORD=${N8N_POSTGRES_NON_ROOT_PASSWORD}
+
+      # Queue configuration with Redis
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=localhost
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_HEALTH_CHECK_ACTIVE=true
+
+      # Security
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+
+      # Server settings
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+
+      # Logging
+      - N8N_LOG_LEVEL=${N8N_LOG_LEVEL:-info}
+
+      # Optional: Timezone
+      - GENERIC_TIMEZONE=${N8N_TIMEZONE:-UTC}
+
+      # Optional: Webhook URL (for external integrations)
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    network_mode: service:tailscale
+
+  n8n-worker:
+    image: ${CONTAINER_REGISTRY:-docker.io}/n8nio/n8n
+    restart: unless-stopped
+    command: worker
+    depends_on:
+      n8n-postgres:
+        condition: service_healthy
+      n8n-redis:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+    volumes:
+      - /mnt/data/n8n-n8n-data:/home/node/.n8n
+    environment:
+      # Database configuration
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=localhost
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${N8N_POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${N8N_POSTGRES_NON_ROOT_USER}
+      - DB_POSTGRESDB_PASSWORD=${N8N_POSTGRES_NON_ROOT_PASSWORD}
+
+      # Queue configuration with Redis
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=localhost
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_HEALTH_CHECK_ACTIVE=true
+
+      # Security
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+
+      # Worker-specific settings
+      - N8N_LOG_LEVEL=${N8N_LOG_LEVEL:-info}
+
+      # Optional: Timezone
+      - GENERIC_TIMEZONE=${N8N_TIMEZONE:-UTC}
+    healthcheck:
+      test: ["CMD", "ps", "aux", "|", "grep", "-v", "grep", "|", "grep", "n8n"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    network_mode: service:tailscale
+
+  tailscale:
+    image: tailscale/tailscale:latest
+    restart: unless-stopped
+    hostname: n8n
+    volumes:
+      - tailscale-tmp:/tmp
+    environment:
+      - TS_HOSTNAME={{ service_name }}
+      - TS_USERSPACE=true
+      - TS_EXTRA_ARGS=--advertise-tags={{ tailscale_advertise_tags_arg }}
+      - TS_SOCKET=/tmp/tailscaled.sock
+    cap_add:
+      - NET_ADMIN
+    env_file:
+      - .env.tailscale
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - /mnt/data/n8n-caddy-data:/data
+      - caddy-config-tmp:/config
+      - tailscale-tmp:/var/run/tailscale
+    depends_on:
+      - n8n
+    network_mode: service:tailscale
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  caddy-config-tmp:
+  tailscale-tmp:
