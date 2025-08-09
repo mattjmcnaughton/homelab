@@ -1,45 +1,18 @@
 ---
 model_list:
-  - model_name: anthropic-claude-3-7-sonnet
-    litellm_params:
-      model: anthropic/claude-3-7-sonnet-20250219
-      api_key: os.environ/ANTHROPIC_API_KEY
-
   - model_name: anthropic-claude-4-sonnet
     litellm_params:
       model: anthropic/claude-sonnet-4-20250514
       api_key: os.environ/ANTHROPIC_API_KEY
 
-  - model_name: anthropic-claude-4-opus
+  - model_name: anthropic-claude-4-1-opus
     litellm_params:
-      model: anthropic/claude-opus-4-20250514
+      model: anthropic/claude-opus-4-1-20250805
       api_key: os.environ/ANTHROPIC_API_KEY
 
-  # Best "fast" OpenAI
-  - model_name: openai-gpt-4o
+  - model_name: openai-gpt-5
     litellm_params:
-      model: openai/gpt-4o
-      api_key: os.environ/OPENAI_API_KEY
-
-  # Best "richer" OpenAI
-  - model_name: openai-gpt-4.5-preview-2025-02-27
-    litellm_params:
-      model: openai/gpt-4.5-preview-2025-02-27
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: openai-o4-mini
-    litellm_params:
-      model: openai/o4-mini
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: openai-gpt-image-1
-    litellm_params:
-      model: openai/gpt-image-1
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: openai-dall-e-3
-    litellm_params:
-      model: openai/dall-e-3
+      model: openai/gpt-5
       api_key: os.environ/OPENAI_API_KEY
 
   - model_name: google-gemini-2.5-flash
@@ -52,20 +25,6 @@ model_list:
       model: gemini/gemini-2.5-pro
       api_key: os.environ/GEMINI_API_KEY
 
-  - model_name: bedrock-titan-image-generator-v2
-    litellm_params:
-      model: bedrock/amazon.titan-image-generator-v2:0
-      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
-      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
-      aws_region_name: os.environ/AWS_REGION_NAME
-
-  - model_name: bedrock-titan-embed-text-v2
-    litellm_params:
-      model: bedrock/amazon.titan-embed-text-v2:0
-      aws_access_key_id: os.environ/aws_access_key_id
-      aws_secret_access_key: os.environ/aws_secret_access_key
-      aws_region_name: os.environ/aws_region_name
-
   - model_name: bedrock-cohere-embed-english-v3
     litellm_params:
       model: bedrock/cohere.embed-english-v3
@@ -76,27 +35,6 @@ model_list:
   - model_name: bedrock-deepseek-r1
     litellm_params:
       model: bedrock/deepseek.r1-v1:0
-      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
-      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
-      aws_region_name: os.environ/AWS_REGION_NAME
-
-  - model_name: bedrock-llama3-3-70b-instruct
-    litellm_params:
-      model: bedrock/us.meta.llama3-3-70b-instruct-v1:0
-      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
-      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
-      aws_region_name: os.environ/AWS_REGION_NAME
-
-  - model_name: bedrock-llama4-maverick-17b-instruct
-    litellm_params:
-      model: bedrock/us.meta.llama4-maverick-17b-instruct-v1:0
-      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
-      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
-      aws_region_name: os.environ/AWS_REGION_NAME
-
-  - model_name: bedrock-llama4-scout-17b-instruct
-    litellm_params:
-      model: bedrock/us.meta.llama4-maverick-17b-instruct-v1:0
       aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
       aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
       aws_region_name: os.environ/AWS_REGION_NAME
