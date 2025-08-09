@@ -53,53 +53,6 @@ model_list:
       aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
       aws_region_name: us-west-2
 
-  - model_name: local-gemma-3n-4b
-    litellm_params:
-      model: openai/google/gemma-3n-e4b
-      api_key: none
-      api_base: http://agnolotti.capybara-tuna.ts.net:1234/v1/
-
-  - model_name: local-gemma3-12b
-    litellm_params:
-      model: openai/google/gemma-3-12b
-      api_key: none
-      api_base: http://agnolotti.capybara-tuna.ts.net:1234/v1/
-
-  - model_name: local-mistral-7b
-    litellm_params:
-      model: openai/mistralai/mistral-7b-instruct-v0.3
-      api_key: none
-      api_base: http://agnolotti.capybara-tuna.ts.net:1234/v1/
-
-  - model_name: local-qwen3-coder-30b
-    litellm_params:
-      model: openai/qwen/qwen3-coder-30b
-      api_key: none
-      api_base: http://agnolotti.capybara-tuna.ts.net:1234/v1/
-
-  - model_name: local-qwen3-30b
-    litellm_params:
-      model: openai/qwen/qwen3-30b-a3b-2507
-      api_key: none
-      api_base: http://agnolotti.capybara-tuna.ts.net:1234/v1/
-
-  - model_name: local-phi4-mini-reasoning
-    litellm_params:
-      model: openai/microsoft/phi-4-mini-reasoning
-      api_key: none
-      api_base: http://agnolotti.capybara-tuna.ts.net:1234/v1/
-
-  - model_name: local-devstral-small
-    litellm_params:
-      model: openai/mistralai/devstral-small-2507
-      api_key: none
-      api_base: http://agnolotti.capybara-tuna.ts.net:1234/v1/
-
-  - model_name: local-deepseek-r1-8b
-    litellm_params:
-      model: openai/deepseek/deepseek-r1-0528-qwen3-8b
-      api_key: none
-      api_base: http://agnolotti.capybara-tuna.ts.net:1234/v1/
 
   - model_name: local-llama-31-8b
     litellm_params:
@@ -116,6 +69,30 @@ model_list:
   - model_name: local-gpt-oss-20b
     litellm_params:
       model: openai/gpt-oss:20b
+      api_key: none
+      api_base: http://agnolotti.capybara-tuna.ts.net:11434/v1/
+
+  - model_name: local-deepseek-r1-8b
+    litellm_params:
+      model: openai/deepseek-r1:8b
+      api_key: none
+      api_base: http://agnolotti.capybara-tuna.ts.net:11434/v1/
+
+  - model_name: local-mistral-7b
+    litellm_params:
+      model: openai/mistral:7b
+      api_key: none
+      api_base: http://agnolotti.capybara-tuna.ts.net:11434/v1/
+
+  - model_name: local-qwen3-coder-30b
+    litellm_params:
+      model: openai/qwen3-coder:30b
+      api_key: none
+      api_base: http://agnolotti.capybara-tuna.ts.net:11434/v1/
+
+  - model_name: local-qwen3-8b
+    litellm_params:
+      model: openai/qwen3:8b
       api_key: none
       api_base: http://agnolotti.capybara-tuna.ts.net:11434/v1/
 
