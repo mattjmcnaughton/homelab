@@ -1,6 +1,6 @@
 ---
 service_name: "n8n"
-container_port: "5678"
+container_port: "5677"
 
 host_data_dir_owner: "mattjmcnaughton"
 
